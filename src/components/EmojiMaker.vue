@@ -436,7 +436,11 @@ const updateTextColor = (event: Event) => {
 }
 
 const handleKeyDown = (event: KeyboardEvent) => {
-  if (selectedIndex.value !== null && (event.key === 'Delete' || event.key === 'Backspace')) {
+  // 检查是否有正在编辑的文字元素
+  const hasEditingText = elements.value.some(element => element.type === 'text' && element.isEditing)
+  
+  // 只有在没有文字正在编辑时，才响应删除键
+  if (!hasEditingText && selectedIndex.value !== null && (event.key === 'Delete' || event.key === 'Backspace')) {
     deleteElement(selectedIndex.value)
   }
 }
