@@ -203,7 +203,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import html2canvas from 'html2canvas'
 
 interface Element {
@@ -225,6 +225,8 @@ interface Element {
   isVisible?: boolean
 }
 
+const STORAGE_KEY = 'emoji-maker-elements'
+
 const fileInput = ref<HTMLInputElement | null>(null)
 const canvasContainer = ref<HTMLDivElement | null>(null)
 const elements = ref<Element[]>([])
@@ -233,6 +235,23 @@ const selectedIndex = ref<number | null>(null)
 const selectedElement = computed(() =>
   selectedIndex.value !== null ? elements.value[selectedIndex.value] : null
 )
+
+// 监听 elements 变化并保存到 localStorage
+watch(elements, (newElements) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(newElements))
+}, { deep: true })
+
+// 从 localStorage 恢复数据
+const restoreData = () => {
+  const savedData = localStorage.getItem(STORAGE_KEY)
+  if (savedData) {
+    try {
+      elements.value = JSON.parse(savedData)
+    } catch (error) {
+      console.error('恢复数据失败:', error)
+    }
+  }
+}
 
 const handleImageUpload = () => {
   fileInput.value?.click()
@@ -442,6 +461,7 @@ const toggleVisibility = (index: number, event: Event) => {
 }
 
 onMounted(() => {
+  restoreData()
   window.addEventListener('mousemove', onDrag)
   window.addEventListener('mouseup', stopDrag)
   window.addEventListener('click', handleClickOutside)
