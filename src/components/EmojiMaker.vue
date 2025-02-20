@@ -12,7 +12,7 @@
             'selected': selectedIndex === index,
             'hidden': element.isVisible === false
           }"
-          @click="selectElement(index)"
+          @click.stop="selectElement(index)"
           draggable="true"
           @dragstart="startDrag"
           @dragover.prevent
@@ -94,7 +94,7 @@
               ></div>
             </template>
             <template v-else>
-              <img :src="element.content" :alt="'图片' + index">
+              <img :src="element.content" :alt="t('editor.image') + (index + 1)">
             </template>
           </div>
         </div>
@@ -144,20 +144,20 @@
               >
             </div>
             <div class="control-item">
-              <label>边框样式</label>
+              <label>{{ t('editor.borderStyle') }}</label>
               <select @change="updateBorderStyle($event)" :value="selectedElement.style.borderStyle || 'none'" class="border-style-select">
-                <option value="none">无边框</option>
-                <option value="chat-bubble-green">绿色聊天气泡</option>
-                <option value="chat-bubble-blue">蓝色聊天气泡</option>
-                <option value="chat-bubble-gray">灰色聊天气泡</option>
-                <option value="chat-bubble-green-right">绿色聊天气泡(右)</option>
-                <option value="chat-bubble-blue-right">蓝色聊天气泡(右)</option>
-                <option value="chat-bubble-gray-right">灰色聊天气泡(右)</option>
-                <option value="chat-bubble-outline">透明聊天气泡(左)</option>
-                <option value="chat-bubble-outline-right">透明聊天气泡(右)</option>
-                <option value="rounded">圆角边框</option>
-                <option value="square">方形边框</option>
-                <option value="shadow">阴影边框</option>
+                <option value="none">{{ t('editor.borderStyles.none') }}</option>
+                <option value="chat-bubble-green">{{ t('editor.borderStyles.chatBubbleGreen') }}</option>
+                <option value="chat-bubble-blue">{{ t('editor.borderStyles.chatBubbleBlue') }}</option>
+                <option value="chat-bubble-gray">{{ t('editor.borderStyles.chatBubbleGray') }}</option>
+                <option value="chat-bubble-green-right">{{ t('editor.borderStyles.chatBubbleGreenRight') }}</option>
+                <option value="chat-bubble-blue-right">{{ t('editor.borderStyles.chatBubbleBlueRight') }}</option>
+                <option value="chat-bubble-gray-right">{{ t('editor.borderStyles.chatBubbleGrayRight') }}</option>
+                <option value="chat-bubble-outline">{{ t('editor.borderStyles.chatBubbleOutline') }}</option>
+                <option value="chat-bubble-outline-right">{{ t('editor.borderStyles.chatBubbleOutlineRight') }}</option>
+                <option value="rounded">{{ t('editor.borderStyles.rounded') }}</option>
+                <option value="square">{{ t('editor.borderStyles.square') }}</option>
+                <option value="shadow">{{ t('editor.borderStyles.shadow') }}</option>
               </select>
             </div>
             <div class="control-item">
@@ -290,7 +290,7 @@ const onFileSelected = (event: Event) => {
 const addText = () => {
   elements.value.push({
     type: 'text',
-    content: '双击编辑文字',
+    content: t('editor.textPlaceholder'),
     style: {
       left: '50%',
       top: '50%',
@@ -366,6 +366,11 @@ const finishTextEdit = (index: number) => {
   const element = elements.value[index]
   if (element.type === 'text') {
     element.isEditing = false
+    // 获取编辑后的文本内容
+    const textElement = document.querySelector(`.draggable-element:nth-child(${index + 1}) .text-element`) as HTMLElement
+    if (textElement) {
+      element.content = textElement.innerText || t('editor.textPlaceholder')
+    }
   }
 }
 
