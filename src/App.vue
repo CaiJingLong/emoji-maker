@@ -10,15 +10,20 @@ const { setLanguage, t } = languageStore
 const toggleLanguage = () => {
   setLanguage(currentLanguage.value === 'zh' ? 'en' : 'zh')
 }
+
+const githubUrl = 'https://github.com/CaiJingLong/emoji-maker.git'
 </script>
 
 <template>
   <div class="app">
     <header>
       <h1>{{ t('app.title') }}</h1>
-      <button class="lang-toggle" @click="toggleLanguage">
-        {{ currentLanguage === 'zh' ? 'English' : '中文' }}
-      </button>
+      <div class="header-buttons">
+        <a :href="githubUrl" target="_blank" class="github-link">GitHub</a>
+        <button class="lang-toggle" @click="toggleLanguage">
+          {{ currentLanguage === 'zh' ? 'English' : '中文' }}
+        </button>
+      </div>
     </header>
     <main>
       <EmojiMaker />
@@ -110,6 +115,29 @@ nav a:first-of-type {
 }
 
 .lang-toggle:hover {
+  background-color: white;
+  color: #2c3e50;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.github-link {
+  background-color: transparent;
+  border: 1px solid white;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.github-link:hover {
   background-color: white;
   color: #2c3e50;
 }

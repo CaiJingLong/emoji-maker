@@ -1,5 +1,7 @@
 # Emoji Maker
 
+[English](./README.en.md) | [中文](./README.md)
+
 一个简单易用的在线表情包制作工具。
 
 ## 功能特性
