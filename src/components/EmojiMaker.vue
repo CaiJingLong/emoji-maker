@@ -6,15 +6,20 @@
           v-for="(element, index) in elements"
           :key="index"
           class="draggable-element"
+          :class="{ 'selected': selectedIndex === index }"
           :style="{
             left: element.style.left,
             top: element.style.top,
             position: element.style.position,
             transform: element.style.transform,
             fontSize: element.style.fontSize,
-            color: element.style.color
+            color: element.style.color,
+            width: element.style.width,
+            height: element.style.height,
+            rotate: element.style.rotate
           }"
           @mousedown="startDrag($event, index)"
+          @click.stop="selectElement(index)"
           @dblclick="editText(index)"
         >
           <template v-if="element.type === 'text'">
@@ -48,11 +53,68 @@
         >
       </div>
     </div>
+
+    <div class="control-panel" v-if="selectedIndex !== null">
+      <div class="panel-header">
+        <span>{{ selectedElement.type === 'text' ? '文字设置' : '图片设置' }}</span>
+        <button class="delete-btn" @click="deleteElement(selectedIndex)">删除</button>
+      </div>
+      <div class="panel-content">
+        <template v-if="selectedElement.type === 'text'">
+          <div class="control-item">
+            <label>字号</label>
+            <input
+              type="range"
+              :value="parseInt(selectedElement.style.fontSize)"
+              min="12"
+              max="72"
+              @input="updateTextSize($event)"
+            >
+            <span class="size-value">{{ selectedElement.style.fontSize }}</span>
+          </div>
+          <div class="control-item">
+            <label>旋转</label>
+            <input
+              type="range"
+              :value="parseInt(selectedElement.style.rotate)"
+              min="0"
+              max="360"
+              @input="updateRotation($event)"
+            >
+            <span class="size-value">{{ selectedElement.style.rotate }}</span>
+          </div>
+        </template>
+        <template v-else>
+          <div class="control-item">
+            <label>大小</label>
+            <input
+              type="range"
+              :value="parseInt(selectedElement.style.width)"
+              min="50"
+              max="500"
+              @input="updateImageSize($event)"
+            >
+            <span class="size-value">{{ selectedElement.style.width }}</span>
+          </div>
+          <div class="control-item">
+            <label>旋转</label>
+            <input
+              type="range"
+              :value="parseInt(selectedElement.style.rotate)"
+              min="0"
+              max="360"
+              @input="updateRotation($event)"
+            >
+            <span class="size-value">{{ selectedElement.style.rotate }}</span>
+          </div>
+        </template>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import html2canvas from 'html2canvas'
 
 interface Element {
@@ -65,6 +127,9 @@ interface Element {
     transform?: string
     fontSize?: string
     color?: string
+    width?: string
+    height?: string
+    rotate?: string
   }
   isEditing?: boolean
 }
@@ -73,6 +138,10 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const canvasContainer = ref<HTMLDivElement | null>(null)
 const elements = ref<Element[]>([])
 const draggedElement = ref<{ index: number; startX: number; startY: number } | null>(null)
+const selectedIndex = ref<number | null>(null)
+const selectedElement = computed(() =>
+  selectedIndex.value !== null ? elements.value[selectedIndex.value] : null
+)
 
 const handleImageUpload = () => {
   fileInput.value?.click()
@@ -92,7 +161,10 @@ const onFileSelected = (event: Event) => {
               left: '50%',
               top: '50%',
               position: 'absolute',
-              transform: 'translate(-50%, -50%)'
+              transform: 'translate(-50%, -50%)',
+              width: '200px',
+              height: 'auto',
+              rotate: '0deg'
             }
           })
         }
@@ -112,7 +184,8 @@ const addText = () => {
       position: 'absolute',
       transform: 'translate(-50%, -50%)',
       fontSize: '24px',
-      color: '#000000'
+      color: '#000000',
+      rotate: '0deg'
     },
     isEditing: false
   })
@@ -182,14 +255,54 @@ const exportImage = async () => {
   }
 }
 
+const updateTextSize = (event: Event) => {
+  if (selectedIndex.value === null) return
+  const input = event.target as HTMLInputElement
+  const size = input.value
+  elements.value[selectedIndex.value].style.fontSize = `${size}px`
+}
+
+const updateImageSize = (event: Event) => {
+  if (selectedIndex.value === null) return
+  const input = event.target as HTMLInputElement
+  const width = input.value
+  elements.value[selectedIndex.value].style.width = `${width}px`
+  elements.value[selectedIndex.value].style.height = 'auto'
+}
+
+const updateRotation = (event: Event) => {
+  if (selectedIndex.value === null) return
+  const input = event.target as HTMLInputElement
+  const angle = input.value
+  elements.value[selectedIndex.value].style.rotate = `${angle}deg`
+}
+
+const deleteElement = (index: number) => {
+  elements.value.splice(index, 1)
+  selectedIndex.value = null
+}
+
+const selectElement = (index: number) => {
+  selectedIndex.value = index
+}
+
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.draggable-element') && !target.closest('.control-panel')) {
+    selectedIndex.value = null
+  }
+}
+
 onMounted(() => {
   window.addEventListener('mousemove', onDrag)
   window.addEventListener('mouseup', stopDrag)
+  window.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
   window.removeEventListener('mousemove', onDrag)
   window.removeEventListener('mouseup', stopDrag)
+  window.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -197,8 +310,9 @@ onUnmounted(() => {
 .emoji-maker {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 40px); /* 减去header的高度 */
+  height: calc(100vh - 40px);
   background-color: #f5f5f5;
+  position: relative;
 }
 
 .canvas-area {
@@ -207,8 +321,71 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   padding: 20px;
-  min-height: 0; /* 防止flex子元素溢出 */
   background-color: white;
+  border-radius: 8px;
+  margin: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.control-panel {
+  position: fixed;
+  right: 40px;
+  top: 80px;
+  width: 250px;
+  background: white;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.panel-header span {
+  font-weight: bold;
+  color: #333;
+}
+
+.panel-header .delete-btn {
+  background: #ff4444;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.panel-header .delete-btn:hover {
+  background: #ff0000;
+}
+
+.control-item {
+  margin-bottom: 15px;
+}
+
+.control-item label {
+  display: block;
+  margin-bottom: 8px;
+  color: #666;
+}
+
+.control-item input[type="range"] {
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.size-value {
+  display: block;
+  text-align: center;
+  color: #666;
+  font-size: 14px;
 }
 
 .canvas-container {
@@ -219,6 +396,38 @@ onUnmounted(() => {
   border-radius: 8px;
   position: relative;
   overflow: hidden;
+}
+
+.draggable-element {
+  position: absolute;
+  cursor: move;
+  user-select: none;
+  border: 2px solid transparent;
+  transform-origin: center center;
+}
+
+.draggable-element.selected {
+  border-color: #4CAF50;
+}
+
+.draggable-element img {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  object-fit: contain;
+  transform-origin: center center;
+}
+
+.text-element {
+  padding: 5px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.text-element[contenteditable="true"] {
+  border-color: #4CAF50;
+  outline: none;
+  cursor: text;
 }
 
 .tools-panel {
@@ -251,29 +460,5 @@ onUnmounted(() => {
 
 .tools-container button:hover {
   background-color: #45a049;
-}
-
-.draggable-element {
-  position: absolute;
-  cursor: move;
-  user-select: none;
-}
-
-.draggable-element img {
-  max-width: 300px;
-  max-height: 300px;
-  pointer-events: none;
-}
-
-.text-element {
-  padding: 5px;
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
-
-.text-element[contenteditable="true"] {
-  border-color: #4CAF50;
-  outline: none;
-  cursor: text;
 }
 </style>
