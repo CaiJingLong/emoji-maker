@@ -1,7 +1,7 @@
 <template>
   <div class="emoji-maker">
     <div class="layers-panel">
-      <h3>图层管理</h3>
+      <h3>{{ t('app.layers') }}</h3>
       <ul class="layer-list">
         <li
           v-for="(element, index) in elements"
@@ -35,7 +35,7 @@
               </template>
             </span>
             <span class="layer-item-text">
-              {{ element.type === 'text' ? (element.content || '文字') : '图片' }}
+              {{ element.type === 'text' ? (element.content || t('editor.textPlaceholder')) : t('editor.image') }}
             </span>
           </div>
           <span
@@ -102,9 +102,9 @@
 
       <div class="tools-panel">
         <div class="tools-container">
-          <button @click="handleImageUpload">上传图片</button>
-          <button @click="addText">添加文字</button>
-          <button @click="exportImage">导出表情</button>
+          <button @click="handleImageUpload">{{ t('app.upload') }}</button>
+          <button @click="addText">{{ t('app.addText') }}</button>
+          <button @click="exportImage">{{ t('app.download') }}</button>
           <input
             type="file"
             ref="fileInput"
@@ -118,13 +118,13 @@
 
       <div class="control-panel" v-if="selectedElement">
         <div class="panel-header">
-          <span>{{ selectedElement.type === 'text' ? '文字设置' : '图片设置' }}</span>
-          <button class="delete-btn" @click="deleteElement(selectedIndex!)">删除</button>
+          <span>{{ selectedElement.type === 'text' ? t('editor.textSettings') : t('editor.imageSettings') }}</span>
+          <button class="delete-btn" @click="deleteElement(selectedIndex!)">{{ t('editor.delete') }}</button>
         </div>
         <div class="panel-content">
           <template v-if="selectedElement.type === 'text'">
             <div class="control-item">
-              <label>字号</label>
+              <label>{{ t('editor.fontSize') }}</label>
               <input
                 type="range"
                 :value="parseInt(selectedElement.style.fontSize || '24')"
@@ -135,7 +135,7 @@
               <span class="size-value">{{ selectedElement.style.fontSize }}</span>
             </div>
             <div class="control-item">
-              <label>颜色</label>
+              <label>{{ t('editor.fontColor') }}</label>
               <input
                 type="color"
                 :value="selectedElement.style.color || '#000000'"
@@ -161,7 +161,7 @@
               </select>
             </div>
             <div class="control-item">
-              <label>旋转</label>
+              <label>{{ t('editor.rotation') }}</label>
               <input
                 type="range"
                 :value="parseInt(selectedElement.style.rotate || '0')"
@@ -174,7 +174,7 @@
           </template>
           <template v-else>
             <div class="control-item">
-              <label>大小</label>
+              <label>{{ t('editor.size') }}</label>
               <input
                 type="range"
                 :value="parseInt(selectedElement.style.width || '200')"
@@ -185,7 +185,7 @@
               <span class="size-value">{{ selectedElement.style.width }}</span>
             </div>
             <div class="control-item">
-              <label>旋转</label>
+              <label>{{ t('editor.rotation') }}</label>
               <input
                 type="range"
                 :value="parseInt(selectedElement.style.rotate || '0')"
@@ -205,6 +205,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import html2canvas from 'html2canvas'
+import { useLanguageStore } from '../stores/language'
+
+const { t } = useLanguageStore()
 
 interface Element {
   type: 'image' | 'text'

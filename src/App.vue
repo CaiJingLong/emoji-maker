@@ -1,11 +1,24 @@
 <script setup lang="ts">
 import EmojiMaker from './components/EmojiMaker.vue'
+import { useLanguageStore } from './stores/language'
+import { storeToRefs } from 'pinia'
+
+const languageStore = useLanguageStore()
+const { currentLanguage } = storeToRefs(languageStore)
+const { setLanguage, t } = languageStore
+
+const toggleLanguage = () => {
+  setLanguage(currentLanguage.value === 'zh' ? 'en' : 'zh')
+}
 </script>
 
 <template>
   <div class="app">
     <header>
-      <h1>Emoji Maker</h1>
+      <h1>{{ t('app.title') }}</h1>
+      <button class="lang-toggle" @click="toggleLanguage">
+        {{ currentLanguage === 'zh' ? 'English' : '中文' }}
+      </button>
     </header>
     <main>
       <EmojiMaker />
@@ -33,10 +46,14 @@ body {
 header {
   background-color: #2c3e50;
   color: white;
-  padding: 0.5rem 0;
+  padding: 0.5rem 1rem;
   text-align: center;
   flex-shrink: 0;
   width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 main {
@@ -79,6 +96,22 @@ nav a {
 
 nav a:first-of-type {
   border: 0;
+}
+
+.lang-toggle {
+  background-color: transparent;
+  border: 1px solid white;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.lang-toggle:hover {
+  background-color: white;
+  color: #2c3e50;
 }
 
 @media (min-width: 1024px) {
