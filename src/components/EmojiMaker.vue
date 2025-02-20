@@ -199,6 +199,12 @@
         </div>
       </div>
     </div>
+
+    <ExportDialog
+      v-if="showExportDialog"
+      :container="canvasContainer"
+      @close="showExportDialog = false"
+    />
   </div>
 </template>
 
@@ -206,6 +212,7 @@
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import html2canvas from 'html2canvas'
 import { useLanguageStore } from '../stores/language'
+import ExportDialog from './ExportDialog.vue'
 
 const { t } = useLanguageStore()
 
@@ -238,6 +245,7 @@ const selectedIndex = ref<number | null>(null)
 const selectedElement = computed(() =>
   selectedIndex.value !== null ? elements.value[selectedIndex.value] : null
 )
+const showExportDialog = ref(false)
 
 // 监听 elements 变化并保存到 localStorage
 watch(elements, (newElements) => {
@@ -374,21 +382,8 @@ const finishTextEdit = (index: number) => {
   }
 }
 
-const exportImage = async () => {
-  if (!canvasContainer.value) return
-
-  try {
-    const canvas = await html2canvas(canvasContainer.value, {
-      backgroundColor: 'white'
-    })
-
-    const link = document.createElement('a')
-    link.download = 'emoji.png'
-    link.href = canvas.toDataURL()
-    link.click()
-  } catch (error) {
-    console.error('导出失败:', error)
-  }
+const exportImage = () => {
+  showExportDialog.value = true
 }
 
 const updateTextSize = (event: Event) => {
@@ -613,7 +608,13 @@ onUnmounted(() => {
 .canvas-container {
   width: min(800px, 90vmin);
   height: min(800px, 90vmin);
-  background-color: white;
+  background-color: transparent;
+  background-image: linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+    linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+    linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
   border: 2px dashed #ccc;
   border-radius: 8px;
   position: relative;

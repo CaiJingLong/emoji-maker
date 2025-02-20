@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="256" cy="256" r="240" fill="#4CAF50"/>
+  
+  <!-- 笑脸 -->
+  <circle cx="176" cy="200" r="32" fill="white"/>
+  <circle cx="336" cy="200" r="32" fill="white"/>
+  <path d="M160 320C160 320 200 384 256 384C312 384 352 320 352 320" stroke="white" stroke-width="24" stroke-linecap="round"/>
+  
+  <!-- 编辑图标 -->
+  <circle cx="400" cy="400" r="64" fill="white"/>
+  <path d="M368 400L384 416L432 368" stroke="#4CAF50" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+</svg> 
