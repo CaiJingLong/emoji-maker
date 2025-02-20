@@ -25,6 +25,7 @@
           <template v-if="element.type === 'text'">
             <div
               class="text-element"
+              :class="element.style.borderStyle"
               :contenteditable="element.isEditing"
               @blur="finishTextEdit(index)"
               @keydown.enter.prevent="finishTextEdit(index)"
@@ -86,6 +87,23 @@
             >
           </div>
           <div class="control-item">
+            <label>边框样式</label>
+            <select @change="updateBorderStyle($event)" :value="selectedElement.style.borderStyle || 'none'" class="border-style-select">
+              <option value="none">无边框</option>
+              <option value="chat-bubble-green">绿色聊天气泡</option>
+              <option value="chat-bubble-blue">蓝色聊天气泡</option>
+              <option value="chat-bubble-gray">灰色聊天气泡</option>
+              <option value="chat-bubble-green-right">绿色聊天气泡(右)</option>
+              <option value="chat-bubble-blue-right">蓝色聊天气泡(右)</option>
+              <option value="chat-bubble-gray-right">灰色聊天气泡(右)</option>
+              <option value="chat-bubble-outline">透明聊天气泡(左)</option>
+              <option value="chat-bubble-outline-right">透明聊天气泡(右)</option>
+              <option value="rounded">圆角边框</option>
+              <option value="square">方形边框</option>
+              <option value="shadow">阴影边框</option>
+            </select>
+          </div>
+          <div class="control-item">
             <label>旋转</label>
             <input
               type="range"
@@ -143,6 +161,7 @@ interface Element {
     width?: string
     height?: string
     rotate?: string
+    borderStyle?: string
   }
   isEditing?: boolean
 }
@@ -198,7 +217,8 @@ const addText = () => {
       transform: 'translate(-50%, -50%)',
       fontSize: '24px',
       color: '#000000',
-      rotate: '0deg'
+      rotate: '0deg',
+      borderStyle: 'none'
     },
     isEditing: false
   })
@@ -312,16 +332,30 @@ const updateTextColor = (event: Event) => {
   elements.value[selectedIndex.value].style.color = input.value
 }
 
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (selectedIndex.value !== null && (event.key === 'Delete' || event.key === 'Backspace')) {
+    deleteElement(selectedIndex.value)
+  }
+}
+
+const updateBorderStyle = (event: Event) => {
+  if (selectedIndex.value === null) return
+  const select = event.target as HTMLSelectElement
+  elements.value[selectedIndex.value].style.borderStyle = select.value
+}
+
 onMounted(() => {
   window.addEventListener('mousemove', onDrag)
   window.addEventListener('mouseup', stopDrag)
   window.addEventListener('click', handleClickOutside)
+  window.addEventListener('keydown', handleKeyDown)
 })
 
 onUnmounted(() => {
   window.removeEventListener('mousemove', onDrag)
   window.removeEventListener('mouseup', stopDrag)
   window.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
 
@@ -503,5 +537,207 @@ onUnmounted(() => {
   border: 1px solid #ddd;
   border-radius: 4px;
   cursor: pointer;
+}
+
+.border-style-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+}
+
+.text-element.chat-bubble-green {
+  background: #e8f5e9;
+  border-radius: 20px;
+  padding: 10px 15px;
+  position: relative;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.text-element.chat-bubble-green::before {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 20px;
+  border-width: 10px 10px 0;
+  border-style: solid;
+  border-color: #e8f5e9 transparent transparent;
+}
+
+.text-element.chat-bubble-blue {
+  background: #e3f2fd;
+  border-radius: 20px;
+  padding: 10px 15px;
+  position: relative;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.text-element.chat-bubble-blue::before {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 20px;
+  border-width: 10px 10px 0;
+  border-style: solid;
+  border-color: #e3f2fd transparent transparent;
+}
+
+.text-element.chat-bubble-gray {
+  background: #f5f5f5;
+  border-radius: 20px;
+  padding: 10px 15px;
+  position: relative;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.text-element.chat-bubble-gray::before {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 20px;
+  border-width: 10px 10px 0;
+  border-style: solid;
+  border-color: #f5f5f5 transparent transparent;
+}
+
+.text-element.chat-bubble-green-right {
+  background: #e8f5e9;
+  border-radius: 20px;
+  padding: 10px 15px;
+  position: relative;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.text-element.chat-bubble-green-right::before {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  right: 20px;
+  border-width: 10px 10px 0;
+  border-style: solid;
+  border-color: #e8f5e9 transparent transparent;
+}
+
+.text-element.chat-bubble-blue-right {
+  background: #e3f2fd;
+  border-radius: 20px;
+  padding: 10px 15px;
+  position: relative;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.text-element.chat-bubble-blue-right::before {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  right: 20px;
+  border-width: 10px 10px 0;
+  border-style: solid;
+  border-color: #e3f2fd transparent transparent;
+}
+
+.text-element.chat-bubble-gray-right {
+  background: #f5f5f5;
+  border-radius: 20px;
+  padding: 10px 15px;
+  position: relative;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.text-element.chat-bubble-gray-right::before {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  right: 20px;
+  border-width: 10px 10px 0;
+  border-style: solid;
+  border-color: #f5f5f5 transparent transparent;
+}
+
+.text-element.chat-bubble-outline {
+  background: transparent;
+  border-radius: 20px;
+  padding: 10px 15px;
+  position: relative;
+  border: 2px solid #4CAF50;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.text-element.chat-bubble-outline::before,
+.text-element.chat-bubble-outline::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 20px;
+}
+
+.text-element.chat-bubble-outline::before {
+  border-width: 12px 12px 0;
+  border-style: solid;
+  border-color: #4CAF50 transparent transparent;
+  bottom: -12px;
+}
+
+.text-element.chat-bubble-outline::after {
+  border-width: 10px 10px 0;
+  border-style: solid;
+  border-color: white transparent transparent;
+  bottom: -9px;
+}
+
+.text-element.chat-bubble-outline-right {
+  background: transparent;
+  border-radius: 20px;
+  padding: 10px 15px;
+  position: relative;
+  border: 2px solid #4CAF50;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.text-element.chat-bubble-outline-right::before,
+.text-element.chat-bubble-outline-right::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  right: 20px;
+}
+
+.text-element.chat-bubble-outline-right::before {
+  border-width: 12px 12px 0;
+  border-style: solid;
+  border-color: #4CAF50 transparent transparent;
+  bottom: -12px;
+}
+
+.text-element.chat-bubble-outline-right::after {
+  border-width: 10px 10px 0;
+  border-style: solid;
+  border-color: white transparent transparent;
+  bottom: -9px;
+}
+
+.text-element.rounded {
+  border: 2px solid #4CAF50;
+  border-radius: 10px;
+  padding: 8px 15px;
+}
+
+.text-element.square {
+  border: 2px solid #4CAF50;
+  padding: 8px 15px;
+}
+
+.text-element.shadow {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  padding: 8px 15px;
+  border-radius: 4px;
 }
 </style>
