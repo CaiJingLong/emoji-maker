@@ -29,6 +29,10 @@
               @blur="finishTextEdit(index)"
               @keydown.enter.prevent="finishTextEdit(index)"
               v-text="element.content"
+              :style="{
+                fontSize: element.style.fontSize,
+                color: element.style.color
+              }"
             ></div>
           </template>
           <template v-else>
@@ -71,6 +75,15 @@
               @input="updateTextSize($event)"
             >
             <span class="size-value">{{ selectedElement.style.fontSize }}</span>
+          </div>
+          <div class="control-item">
+            <label>颜色</label>
+            <input
+              type="color"
+              :value="selectedElement.style.color"
+              @input="updateTextColor($event)"
+              class="color-picker"
+            >
           </div>
           <div class="control-item">
             <label>旋转</label>
@@ -293,6 +306,12 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 }
 
+const updateTextColor = (event: Event) => {
+  if (selectedIndex.value === null) return
+  const input = event.target as HTMLInputElement
+  elements.value[selectedIndex.value].style.color = input.value
+}
+
 onMounted(() => {
   window.addEventListener('mousemove', onDrag)
   window.addEventListener('mouseup', stopDrag)
@@ -310,7 +329,8 @@ onUnmounted(() => {
 .emoji-maker {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 40px);
+  height: 100%;
+  width: 100%;
   background-color: #f5f5f5;
   position: relative;
 }
@@ -322,9 +342,27 @@ onUnmounted(() => {
   align-items: center;
   padding: 20px;
   background-color: white;
+  margin: 0;
+  min-height: 0;
+  overflow: auto;
+  width: 100%;
+}
+
+.canvas-container {
+  width: min(800px, 90vmin);
+  height: min(800px, 90vmin);
+  background-color: white;
+  border: 2px dashed #ccc;
   border-radius: 8px;
-  margin: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+@media (max-height: 1000px) {
+  .canvas-container {
+    width: min(800px, calc(100vh - 180px));
+    height: min(800px, calc(100vh - 180px));
+  }
 }
 
 .control-panel {
@@ -388,16 +426,6 @@ onUnmounted(() => {
   font-size: 14px;
 }
 
-.canvas-container {
-  width: min(800px, 80vw);
-  aspect-ratio: 1;
-  background-color: white;
-  border: 2px dashed #ccc;
-  border-radius: 8px;
-  position: relative;
-  overflow: hidden;
-}
-
 .draggable-element {
   position: absolute;
   cursor: move;
@@ -422,27 +450,32 @@ onUnmounted(() => {
   padding: 5px;
   border: 1px solid transparent;
   white-space: nowrap;
+  display: inline-block;
 }
 
 .text-element[contenteditable="true"] {
   border-color: #4CAF50;
   outline: none;
   cursor: text;
+  min-width: 50px;
 }
 
 .tools-panel {
   flex-shrink: 0;
   background-color: white;
-  padding: 20px;
+  padding: 15px;
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+  margin: 0;
+  width: 100%;
 }
 
 .tools-container {
-  max-width: 800px;
+  width: min(800px, 90vmin);
   margin: 0 auto;
   display: flex;
   gap: 10px;
   justify-content: center;
+  padding: 0 20px;
 }
 
 .tools-container button {
@@ -456,9 +489,19 @@ onUnmounted(() => {
   border-radius: 4px;
   cursor: pointer;
   font-size: 16px;
+  white-space: nowrap;
 }
 
 .tools-container button:hover {
   background-color: #45a049;
+}
+
+.control-item .color-picker {
+  width: 100%;
+  height: 40px;
+  padding: 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
 }
 </style>

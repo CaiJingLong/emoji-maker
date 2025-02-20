@@ -17,25 +17,33 @@ import EmojiMaker from './components/EmojiMaker.vue'
 body {
   margin: 0;
   padding: 0;
+  min-height: 100vh;
+  width: 100%;
   overflow-x: hidden;
 }
 
 .app {
   font-family: Arial, sans-serif;
+  min-height: 100vh;
   width: 100%;
-  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 header {
   background-color: #2c3e50;
   color: white;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0;
   text-align: center;
+  flex-shrink: 0;
+  width: 100%;
 }
 
 main {
+  flex: 1;
+  display: flex;
   width: 100%;
-  overflow-x: hidden;
+  justify-content: center;
 }
 
 h1 {
