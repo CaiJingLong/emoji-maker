@@ -349,3 +349,31 @@
 4. 实现了 getSavedLanguage 函数用于读取保存的语言设置
 5. 在 setLanguage 函数中添加了自动保存功能
 6. 初始化时自动读取上次保存的语言设置 
+
+## 版本 29
+
+### 需求
+- 修复 pnpm build 时的 TypeScript 类型错误
+
+### 完成事项
+1. 修复了 language.ts 文件中的类型错误
+2. 优化了多语言翻译函数的类型定义
+3. 成功完成项目构建 
+
+## 版本 30
+
+### 需求
+- 修复 language.ts 中的 TypeScript linter 错误
+
+### 完成事项
+1. 将 result 变量的类型从 any 改为更精确的 Messages | string 类型
+2. 优化了类型安全性，避免使用 any 类型 
+
+## 版本 31
+
+### 需求
+- 修复 language.ts 中的对象索引类型错误
+
+### 完成事项
+1. 添加了 TranslationObject 类型定义，支持递归的字符串索引
+2. 优化了 Messages 类型，使其支持任意深度的嵌套翻译对象 

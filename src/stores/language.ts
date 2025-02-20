@@ -4,7 +4,10 @@ import en from '../locales/en'
 import zh from '../locales/zh'
 
 type Language = 'en' | 'zh'
-type Messages = typeof en
+type TranslationObject = {
+  [key: string]: string | TranslationObject
+}
+type Messages = TranslationObject
 
 const LANGUAGE_STORAGE_KEY = 'emoji-maker-language'
 
