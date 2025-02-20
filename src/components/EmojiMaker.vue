@@ -1,144 +1,202 @@
 <template>
   <div class="emoji-maker">
-    <div class="canvas-area">
-      <div class="canvas-container" ref="canvasContainer" @dragover.prevent>
-        <div
+    <div class="layers-panel">
+      <h3>图层管理</h3>
+      <ul class="layer-list">
+        <li
           v-for="(element, index) in elements"
           :key="index"
-          class="draggable-element"
-          :class="{ 'selected': selectedIndex === index }"
-          :style="{
-            left: element.style.left,
-            top: element.style.top,
-            position: element.style.position,
-            transform: element.style.transform,
-            fontSize: element.style.fontSize,
-            color: element.style.color,
-            width: element.style.width,
-            height: element.style.height,
-            rotate: element.style.rotate
+          :data-index="index"
+          class="layer-item"
+          :class="{
+            'selected': selectedIndex === index,
+            'hidden': element.isVisible === false
           }"
-          @mousedown="startDrag($event, index)"
-          @click.stop="selectElement(index)"
-          @dblclick="editText(index)"
+          @click="selectElement(index)"
+          draggable="true"
+          @dragstart="startDrag"
+          @dragover.prevent
+          @drop="dropElement($event, index)"
+          @dragend="stopDrag"
         >
-          <template v-if="element.type === 'text'">
-            <div
-              class="text-element"
-              :class="element.style.borderStyle"
-              :contenteditable="element.isEditing"
-              @blur="finishTextEdit(index)"
-              @keydown.enter.prevent="finishTextEdit(index)"
-              v-text="element.content"
-              :style="{
-                fontSize: element.style.fontSize,
-                color: element.style.color
-              }"
-            ></div>
-          </template>
-          <template v-else>
-            <img :src="element.content" :alt="'图片' + index">
-          </template>
+          <div class="layer-item-content">
+            <span class="layer-item-icon">
+              <template v-if="element.type === 'text'">
+                <span class="text-icon">T</span>
+              </template>
+              <template v-else>
+                <span class="image-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                </span>
+              </template>
+            </span>
+            <span class="layer-item-text">
+              {{ element.type === 'text' ? (element.content || '文字') : '图片' }}
+            </span>
+          </div>
+          <span
+            class="layer-item-visibility"
+            @click="toggleVisibility(index, $event)"
+          >
+            <svg v-if="element.isVisible !== false" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="main-content">
+      <div class="canvas-area">
+        <div class="canvas-container" ref="canvasContainer" @dragover.prevent>
+          <div
+            v-for="(element, index) in elements"
+            :key="index"
+            v-show="element.isVisible !== false"
+            class="draggable-element"
+            :class="{ 'selected': selectedIndex === index }"
+            :style="{
+              left: element.style.left,
+              top: element.style.top,
+              position: element.style.position,
+              transform: element.style.transform,
+              fontSize: element.style.fontSize,
+              color: element.style.color,
+              width: element.style.width,
+              height: element.style.height,
+              rotate: element.style.rotate
+            }"
+            @mousedown="startDrag($event, index)"
+            @click.stop="selectElement(index)"
+            @dblclick="editText(index)"
+          >
+            <template v-if="element.type === 'text'">
+              <div
+                class="text-element"
+                :class="element.style.borderStyle"
+                :contenteditable="element.isEditing"
+                @blur="finishTextEdit(index)"
+                @keydown.enter.prevent="finishTextEdit(index)"
+                v-text="element.content"
+                :style="{
+                  fontSize: element.style.fontSize,
+                  color: element.style.color
+                }"
+              ></div>
+            </template>
+            <template v-else>
+              <img :src="element.content" :alt="'图片' + index">
+            </template>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="tools-panel">
-      <div class="tools-container">
-        <button @click="handleImageUpload">上传图片</button>
-        <button @click="addText">添加文字</button>
-        <button @click="exportImage">导出表情</button>
-        <input
-          type="file"
-          ref="fileInput"
-          @change="onFileSelected"
-          accept="image/*"
-          style="display: none"
-          multiple
-        >
+      <div class="tools-panel">
+        <div class="tools-container">
+          <button @click="handleImageUpload">上传图片</button>
+          <button @click="addText">添加文字</button>
+          <button @click="exportImage">导出表情</button>
+          <input
+            type="file"
+            ref="fileInput"
+            @change="onFileSelected"
+            accept="image/*"
+            style="display: none"
+            multiple
+          >
+        </div>
       </div>
-    </div>
 
-    <div class="control-panel" v-if="selectedIndex !== null">
-      <div class="panel-header">
-        <span>{{ selectedElement.type === 'text' ? '文字设置' : '图片设置' }}</span>
-        <button class="delete-btn" @click="deleteElement(selectedIndex)">删除</button>
-      </div>
-      <div class="panel-content">
-        <template v-if="selectedElement.type === 'text'">
-          <div class="control-item">
-            <label>字号</label>
-            <input
-              type="range"
-              :value="parseInt(selectedElement.style.fontSize)"
-              min="12"
-              max="72"
-              @input="updateTextSize($event)"
-            >
-            <span class="size-value">{{ selectedElement.style.fontSize }}</span>
-          </div>
-          <div class="control-item">
-            <label>颜色</label>
-            <input
-              type="color"
-              :value="selectedElement.style.color"
-              @input="updateTextColor($event)"
-              class="color-picker"
-            >
-          </div>
-          <div class="control-item">
-            <label>边框样式</label>
-            <select @change="updateBorderStyle($event)" :value="selectedElement.style.borderStyle || 'none'" class="border-style-select">
-              <option value="none">无边框</option>
-              <option value="chat-bubble-green">绿色聊天气泡</option>
-              <option value="chat-bubble-blue">蓝色聊天气泡</option>
-              <option value="chat-bubble-gray">灰色聊天气泡</option>
-              <option value="chat-bubble-green-right">绿色聊天气泡(右)</option>
-              <option value="chat-bubble-blue-right">蓝色聊天气泡(右)</option>
-              <option value="chat-bubble-gray-right">灰色聊天气泡(右)</option>
-              <option value="chat-bubble-outline">透明聊天气泡(左)</option>
-              <option value="chat-bubble-outline-right">透明聊天气泡(右)</option>
-              <option value="rounded">圆角边框</option>
-              <option value="square">方形边框</option>
-              <option value="shadow">阴影边框</option>
-            </select>
-          </div>
-          <div class="control-item">
-            <label>旋转</label>
-            <input
-              type="range"
-              :value="parseInt(selectedElement.style.rotate)"
-              min="0"
-              max="360"
-              @input="updateRotation($event)"
-            >
-            <span class="size-value">{{ selectedElement.style.rotate }}</span>
-          </div>
-        </template>
-        <template v-else>
-          <div class="control-item">
-            <label>大小</label>
-            <input
-              type="range"
-              :value="parseInt(selectedElement.style.width)"
-              min="50"
-              max="500"
-              @input="updateImageSize($event)"
-            >
-            <span class="size-value">{{ selectedElement.style.width }}</span>
-          </div>
-          <div class="control-item">
-            <label>旋转</label>
-            <input
-              type="range"
-              :value="parseInt(selectedElement.style.rotate)"
-              min="0"
-              max="360"
-              @input="updateRotation($event)"
-            >
-            <span class="size-value">{{ selectedElement.style.rotate }}</span>
-          </div>
-        </template>
+      <div class="control-panel" v-if="selectedIndex !== null">
+        <div class="panel-header">
+          <span>{{ selectedElement.type === 'text' ? '文字设置' : '图片设置' }}</span>
+          <button class="delete-btn" @click="deleteElement(selectedIndex)">删除</button>
+        </div>
+        <div class="panel-content">
+          <template v-if="selectedElement.type === 'text'">
+            <div class="control-item">
+              <label>字号</label>
+              <input
+                type="range"
+                :value="parseInt(selectedElement.style.fontSize)"
+                min="12"
+                max="72"
+                @input="updateTextSize($event)"
+              >
+              <span class="size-value">{{ selectedElement.style.fontSize }}</span>
+            </div>
+            <div class="control-item">
+              <label>颜色</label>
+              <input
+                type="color"
+                :value="selectedElement.style.color"
+                @input="updateTextColor($event)"
+                class="color-picker"
+              >
+            </div>
+            <div class="control-item">
+              <label>边框样式</label>
+              <select @change="updateBorderStyle($event)" :value="selectedElement.style.borderStyle || 'none'" class="border-style-select">
+                <option value="none">无边框</option>
+                <option value="chat-bubble-green">绿色聊天气泡</option>
+                <option value="chat-bubble-blue">蓝色聊天气泡</option>
+                <option value="chat-bubble-gray">灰色聊天气泡</option>
+                <option value="chat-bubble-green-right">绿色聊天气泡(右)</option>
+                <option value="chat-bubble-blue-right">蓝色聊天气泡(右)</option>
+                <option value="chat-bubble-gray-right">灰色聊天气泡(右)</option>
+                <option value="chat-bubble-outline">透明聊天气泡(左)</option>
+                <option value="chat-bubble-outline-right">透明聊天气泡(右)</option>
+                <option value="rounded">圆角边框</option>
+                <option value="square">方形边框</option>
+                <option value="shadow">阴影边框</option>
+              </select>
+            </div>
+            <div class="control-item">
+              <label>旋转</label>
+              <input
+                type="range"
+                :value="parseInt(selectedElement.style.rotate)"
+                min="0"
+                max="360"
+                @input="updateRotation($event)"
+              >
+              <span class="size-value">{{ selectedElement.style.rotate }}</span>
+            </div>
+          </template>
+          <template v-else>
+            <div class="control-item">
+              <label>大小</label>
+              <input
+                type="range"
+                :value="parseInt(selectedElement.style.width)"
+                min="50"
+                max="500"
+                @input="updateImageSize($event)"
+              >
+              <span class="size-value">{{ selectedElement.style.width }}</span>
+            </div>
+            <div class="control-item">
+              <label>旋转</label>
+              <input
+                type="range"
+                :value="parseInt(selectedElement.style.rotate)"
+                min="0"
+                max="360"
+                @input="updateRotation($event)"
+              >
+              <span class="size-value">{{ selectedElement.style.rotate }}</span>
+            </div>
+          </template>
+        </div>
       </div>
     </div>
   </div>
@@ -164,6 +222,7 @@ interface Element {
     borderStyle?: string
   }
   isEditing?: boolean
+  isVisible?: boolean
 }
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -224,15 +283,32 @@ const addText = () => {
   })
 }
 
-const startDrag = (event: MouseEvent, index: number) => {
-  const element = elements.value[index]
-  if (element.isEditing) return
+const startDrag = (event: MouseEvent | DragEvent, index?: number) => {
+  if (index === undefined) {
+    // 处理图层面板的拖拽
+    const dragEvent = event as DragEvent
+    const target = dragEvent.target as HTMLElement
+    const dragIndex = parseInt(target.getAttribute('data-index') || '0')
+    const element = elements.value[dragIndex]
+    if (element.isEditing) return
 
-  const rect = (event.target as HTMLElement).getBoundingClientRect()
-  draggedElement.value = {
-    index,
-    startX: event.clientX - rect.left,
-    startY: event.clientY - rect.top
+    const data = {
+      index: dragIndex
+    }
+    dragEvent.dataTransfer?.setData('text', JSON.stringify(data))
+    target.classList.add('dragging')
+  } else {
+    // 处理画布中的拖拽
+    const mouseEvent = event as MouseEvent
+    const element = elements.value[index]
+    if (element.isEditing) return
+
+    const rect = (mouseEvent.target as HTMLElement).getBoundingClientRect()
+    draggedElement.value = {
+      index,
+      startX: mouseEvent.clientX - rect.left,
+      startY: mouseEvent.clientY - rect.top
+    }
   }
 }
 
@@ -344,6 +420,27 @@ const updateBorderStyle = (event: Event) => {
   elements.value[selectedIndex.value].style.borderStyle = select.value
 }
 
+const dropElement = (event: DragEvent, index: number) => {
+  event.preventDefault()
+  const data = event.dataTransfer?.getData('text')
+  if (data) {
+    const draggedData = JSON.parse(data)
+    const draggedIndex = draggedData.index
+    const elementToMove = elements.value[draggedIndex]
+
+    elements.value.splice(draggedIndex, 1)
+    elements.value.splice(index, 0, elementToMove)
+
+    selectedIndex.value = index
+  }
+}
+
+const toggleVisibility = (index: number, event: Event) => {
+  event.stopPropagation()
+  const element = elements.value[index]
+  element.isVisible = element.isVisible === undefined ? false : !element.isVisible
+}
+
 onMounted(() => {
   window.addEventListener('mousemove', onDrag)
   window.addEventListener('mouseup', stopDrag)
@@ -362,11 +459,111 @@ onUnmounted(() => {
 <style scoped>
 .emoji-maker {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   height: 100%;
   width: 100%;
   background-color: #f5f5f5;
   position: relative;
+}
+
+.layers-panel {
+  width: 250px;
+  background: white;
+  padding: 15px;
+  border-right: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.layers-panel h3 {
+  margin: 0 0 15px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  font-size: 16px;
+  color: #333;
+}
+
+.layer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.layer-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  margin-bottom: 4px;
+  background: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  cursor: move;
+  user-select: none;
+  transition: all 0.2s;
+}
+
+.layer-item.selected {
+  background: #e8f5e9;
+  border-color: #4CAF50;
+}
+
+.layer-item:hover {
+  background: #f0f0f0;
+}
+
+.layer-item.dragging {
+  opacity: 0.5;
+}
+
+.layer-item.hidden {
+  opacity: 0.5;
+}
+
+.layer-item-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.layer-item-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+}
+
+.layer-item-text {
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layer-item-visibility {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #666;
+  margin-right: 8px;
+}
+
+.layer-item-visibility:hover {
+  color: #333;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .canvas-area {
@@ -379,7 +576,6 @@ onUnmounted(() => {
   margin: 0;
   min-height: 0;
   overflow: auto;
-  width: 100%;
 }
 
 .canvas-container {
@@ -739,5 +935,21 @@ onUnmounted(() => {
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   padding: 8px 15px;
   border-radius: 4px;
+}
+
+.text-icon {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.image-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-icon svg {
+  width: 16px;
+  height: 16px;
 }
 </style>
