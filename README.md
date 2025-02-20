@@ -1,45 +1,86 @@
-# emoji-maker
+# Emoji Maker
 
-This template should help get you started developing with Vue 3 in Vite.
+一个简单易用的在线表情包制作工具。
 
-## Recommended IDE Setup
+## 功能特性
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- 🖼️ 图片上传：支持多图片上传和组合
+- ✍️ 文字编辑：支持添加、编辑和样式设置
+- 🎨 样式定制：
+  - 文字大小（12px - 72px）
+  - 文字颜色自定义
+  - 多种聊天气泡样式（绿色、蓝色、灰色，支持左右方向）
+  - 透明底色聊天气泡
+  - 圆角边框、方形边框、阴影边框等样式
+- 🔄 元素控制：
+  - 拖拽移动
+  - 大小调整（图片：50px - 500px）
+  - 旋转（0-360度）
+  - 删除（支持 Delete/Backspace 键）
+- 📱 自适应布局：适配不同屏幕尺寸
+- 📋 图层管理：支持图层拖拽排序
+- 💾 导出功能：一键导出表情图片
 
-## Type Support for `.vue` Imports in TS
+## 技术栈
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+- Vue 3
+- TypeScript
+- Vite
+- html2canvas
 
-## Customize configuration
+## 开发环境设置
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+1. 克隆项目
 
-## Project Setup
+```bash
+git clone [项目地址]
+cd emoji-maker
+```
 
-```sh
+2. 安装依赖
+
+```bash
 pnpm install
 ```
 
-### Compile and Hot-Reload for Development
+3. 启动开发服务器
 
-```sh
+```bash
 pnpm dev
 ```
 
-### Type-Check, Compile and Minify for Production
+4. 构建项目
 
-```sh
+```bash
 pnpm build
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+## 使用说明
 
-```sh
-pnpm test:unit
-```
+1. 上传图片：点击"上传图片"按钮选择一个或多个图片
+2. 添加文字：点击"添加文字"按钮
+3. 编辑元素：
+   - 拖拽移动：直接用鼠标拖动元素
+   - 调整大小：选中元素后使用右侧控制面板的滑块
+   - 旋转：选中元素后使用右侧控制面板的旋转滑块
+   - 删除：选中元素后点击删除按钮或按键盘删除键
+4. 文字样式：
+   - 双击文字进行编辑
+   - 使用控制面板调整字号、颜色
+   - 选择不同的边框样式和聊天气泡效果
+5. 图层管理：
+   - 在左侧图层面板查看所有元素
+   - 拖拽图层改变元素叠加顺序
+6. 导出：点击"导出表情"按钮保存图片
 
-### Lint with [ESLint](https://eslint.org/)
+## 贡献
 
-```sh
-pnpm lint
-```
+欢迎提交 Issue 和 Pull Request。
+
+## 许可证
+
+[MIT](LICENSE)
+
+## 致谢
+
+本项目使用 [Cursor](https://cursor.sh/) 编辑器开发，项目中的所有代码均由 Cursor 内置的 AI 助手（Claude）自动生成和优化，这充分展示了 AI 辅助编程的强大能力。Cursor 是一个革命性的 AI 驱动的代码编辑器，它不仅提供了智能的代码补全和重构建议，更可以通过自然语言对话来实现完整的功能开发。感谢 Cursor 团队开发了这么优秀的工具，让编程变得更加高效和有趣。

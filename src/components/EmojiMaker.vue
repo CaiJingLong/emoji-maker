@@ -116,10 +116,10 @@
         </div>
       </div>
 
-      <div class="control-panel" v-if="selectedIndex !== null">
+      <div class="control-panel" v-if="selectedElement">
         <div class="panel-header">
           <span>{{ selectedElement.type === 'text' ? '文字设置' : '图片设置' }}</span>
-          <button class="delete-btn" @click="deleteElement(selectedIndex)">删除</button>
+          <button class="delete-btn" @click="deleteElement(selectedIndex!)">删除</button>
         </div>
         <div class="panel-content">
           <template v-if="selectedElement.type === 'text'">
@@ -127,7 +127,7 @@
               <label>字号</label>
               <input
                 type="range"
-                :value="parseInt(selectedElement.style.fontSize)"
+                :value="parseInt(selectedElement.style.fontSize || '24')"
                 min="12"
                 max="72"
                 @input="updateTextSize($event)"
@@ -138,7 +138,7 @@
               <label>颜色</label>
               <input
                 type="color"
-                :value="selectedElement.style.color"
+                :value="selectedElement.style.color || '#000000'"
                 @input="updateTextColor($event)"
                 class="color-picker"
               >
@@ -164,12 +164,12 @@
               <label>旋转</label>
               <input
                 type="range"
-                :value="parseInt(selectedElement.style.rotate)"
+                :value="parseInt(selectedElement.style.rotate || '0')"
                 min="0"
                 max="360"
                 @input="updateRotation($event)"
               >
-              <span class="size-value">{{ selectedElement.style.rotate }}</span>
+              <span class="size-value">{{ selectedElement.style.rotate || '0' }}°</span>
             </div>
           </template>
           <template v-else>
@@ -177,7 +177,7 @@
               <label>大小</label>
               <input
                 type="range"
-                :value="parseInt(selectedElement.style.width)"
+                :value="parseInt(selectedElement.style.width || '200')"
                 min="50"
                 max="500"
                 @input="updateImageSize($event)"
@@ -188,12 +188,12 @@
               <label>旋转</label>
               <input
                 type="range"
-                :value="parseInt(selectedElement.style.rotate)"
+                :value="parseInt(selectedElement.style.rotate || '0')"
                 min="0"
                 max="360"
                 @input="updateRotation($event)"
               >
-              <span class="size-value">{{ selectedElement.style.rotate }}</span>
+              <span class="size-value">{{ selectedElement.style.rotate || '0' }}°</span>
             </div>
           </template>
         </div>
