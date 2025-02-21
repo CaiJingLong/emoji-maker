@@ -384,6 +384,13 @@
           </svg>
           {{ t('app.moveToTop') }}
         </div>
+        <div class="context-menu-item" @click="duplicateElement">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          {{ t('app.duplicate') }}
+        </div>
         <div class="context-menu-item" @click="moveToBottom">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 20l-8-8h6V4h4v8h6l-8 8z"/>
@@ -1628,6 +1635,34 @@ const loadElements = () => {
     elements.value = JSON.parse(savedElements).map((element: ElementType) => initializeElementStyle(element));
   }
 };
+
+const duplicateElement = () => {
+  if (contextMenuIndex.value === null) return
+  const originalElement = elements.value[contextMenuIndex.value]
+  
+  // 深拷贝原始元素
+  const newElement = JSON.parse(JSON.stringify(originalElement))
+  
+  // 生成新的ID
+  newElement.id = Math.max(...elements.value.map(el => el.id)) + 1
+  
+  // 计算新位置（相对偏移20px）
+  const currentLeft = parseInt(newElement.style.left) || 0
+  const currentTop = parseInt(newElement.style.top) || 0
+  newElement.style.left = `${currentLeft + 20}px`
+  newElement.style.top = `${currentTop + 20}px`
+  
+  // 如果有初始中心点，也要相应调整
+  if (newElement.initialCenter) {
+    newElement.initialCenter.x += 20
+    newElement.initialCenter.y += 20
+  }
+  
+  // 添加到元素列表中
+  elements.value.splice(contextMenuIndex.value + 1, 0, newElement)
+  selectedIndex.value = contextMenuIndex.value + 1
+  hideContextMenu()
+}
 </script>
 
 <style scoped>

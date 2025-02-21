@@ -1,4 +1,4 @@
-export default {
+const zh = {
   app: {
     title: '表情制作器',
     upload: '上传图片',
@@ -15,10 +15,11 @@ export default {
     disableSnapping: '关闭吸附',
     showOtherBoundaries: '显示其他组件边界',
     hideOtherBoundaries: '隐藏其他组件边界',
-    moveToTop: '置顶',
-    moveToBottom: '置底',
-    moveToCenter: '移到中央',
+    moveToTop: '移到顶层',
+    moveToBottom: '移到底层',
+    moveToCenter: '移到中心',
     dropHint: '将图片或文本拖放到这里',
+    duplicate: '复制图层',
   },
   editor: {
     textPlaceholder: '文字',
@@ -65,3 +66,5 @@ export default {
     clearConfirm: '确认清空',
   },
 }
+
+export default zh

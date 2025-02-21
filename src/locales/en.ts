@@ -1,4 +1,4 @@
-export default {
+const en = {
   app: {
     title: 'Emoji Maker',
     upload: 'Upload Image',
@@ -18,6 +18,7 @@ export default {
     moveToTop: 'Move to Top',
     moveToBottom: 'Move to Bottom',
     moveToCenter: 'Move to Center',
+    duplicate: 'Duplicate Layer',
     dropHint: 'Drop images or text here',
   },
   editor: {
@@ -66,3 +67,5 @@ export default {
     clearConfirm: 'Clear',
   },
 }
+
+export default en
