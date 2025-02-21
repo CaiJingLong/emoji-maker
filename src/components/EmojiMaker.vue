@@ -1202,6 +1202,29 @@ onUnmounted(() => {
   list-style: none;
   margin: 0;
   padding: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #999 #f5f5f5;
+}
+
+/* 自定义滚动条样式（Webkit浏览器） */
+.layer-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.layer-list::-webkit-scrollbar-track {
+  background: #f5f5f5;
+  border-radius: 3px;
+}
+
+.layer-list::-webkit-scrollbar-thumb {
+  background: #999;
+  border-radius: 3px;
+}
+
+.layer-list::-webkit-scrollbar-thumb:hover {
+  background: #666;
 }
 
 .layer-item {
