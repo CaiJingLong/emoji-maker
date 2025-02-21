@@ -1561,7 +1561,21 @@ const initializeElementStyle = (element: any) => {
   return element
 }
 
-const addElement = (element) => {
+// 定义元素类型
+interface ElementType {
+  style?: {
+    [key: string]: string;
+  };
+  type?: string;
+  content?: string;
+  [key: string]: any;
+}
+
+const saveToLocalStorage = () => {
+  localStorage.setItem('emojiMakerElements', JSON.stringify(elements.value));
+};
+
+const addElement = (element: ElementType) => {
   elements.value.push(initializeElementStyle(element));
   selectedIndex.value = elements.value.length - 1;
   saveToLocalStorage();
@@ -1570,7 +1584,7 @@ const addElement = (element) => {
 const loadElements = () => {
   const savedElements = localStorage.getItem('emojiMakerElements');
   if (savedElements) {
-    elements.value = JSON.parse(savedElements).map(element => initializeElementStyle(element));
+    elements.value = JSON.parse(savedElements).map((element: ElementType) => initializeElementStyle(element));
   }
 };
 </script>
