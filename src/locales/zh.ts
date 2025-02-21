@@ -15,6 +15,9 @@ export default {
     disableSnapping: '关闭吸附',
     showOtherBoundaries: '显示其他组件边界',
     hideOtherBoundaries: '隐藏其他组件边界',
+    moveToTop: '置顶',
+    moveToBottom: '置底',
+    moveToCenter: '移到中央',
   },
   editor: {
     textPlaceholder: '文字',

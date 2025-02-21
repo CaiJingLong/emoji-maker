@@ -18,6 +18,7 @@
                 hidden: element.isVisible === false,
               }"
               @click.stop="selectElement(index)"
+              @contextmenu.prevent="showContextMenu($event, index)"
               draggable="true"
               @dragstart="startDrag"
               @dragover.prevent
@@ -332,6 +333,37 @@
               <span class="size-value">{{ Math.round(parseFloat(selectedElement.style.opacity || '1') * 100) }}%</span>
             </div>
           </template>
+        </div>
+      </div>
+
+      <!-- 添加右键菜单 -->
+      <div
+        v-if="contextMenuVisible"
+        class="context-menu"
+        :style="{
+          left: contextMenuPosition.x + 'px',
+          top: contextMenuPosition.y + 'px',
+        }"
+        @click.stop
+      >
+        <div class="context-menu-item" @click="moveToTop">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 4l-8 8h6v8h4v-8h6l-8-8z"/>
+          </svg>
+          {{ t('app.moveToTop') }}
+        </div>
+        <div class="context-menu-item" @click="moveToBottom">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20l-8-8h6V4h4v8h6l-8 8z"/>
+          </svg>
+          {{ t('app.moveToBottom') }}
+        </div>
+        <div class="context-menu-item" @click="moveToCenter">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 3v3m0 12v3m-9-9h3m12 0h3"/>
+          </svg>
+          {{ t('app.moveToCenter') }}
         </div>
       </div>
     </div>
@@ -1095,6 +1127,82 @@ const updateOpacity = (event: Event) => {
   elements.value[selectedIndex.value].style.opacity = opacity
 }
 
+const contextMenuVisible = ref(false)
+const contextMenuPosition = ref({ x: 0, y: 0 })
+const contextMenuIndex = ref<number | null>(null)
+
+const showContextMenu = (event: MouseEvent, index: number) => {
+  event.preventDefault()
+  event.stopPropagation()
+
+  // 先隐藏当前菜单（如果有的话）
+  contextMenuVisible.value = false
+
+  // 设置新的位置和索引
+  contextMenuPosition.value = {
+    x: event.clientX,
+    y: event.clientY,
+  }
+  contextMenuIndex.value = index
+  selectedIndex.value = index
+
+  // 在下一个事件循环中显示菜单
+  setTimeout(() => {
+    contextMenuVisible.value = true
+  }, 0)
+}
+
+const hideContextMenu = (event?: MouseEvent) => {
+  // 如果点击的是菜单项，不要隐藏菜单
+  if (event?.target instanceof Element && event.target.closest('.context-menu')) {
+    return
+  }
+  contextMenuVisible.value = false
+  contextMenuIndex.value = null
+}
+
+const moveToTop = () => {
+  if (contextMenuIndex.value === null) return
+  const element = elements.value[contextMenuIndex.value]
+  elements.value.splice(contextMenuIndex.value, 1)
+  elements.value.push(element)
+  selectedIndex.value = elements.value.length - 1
+  hideContextMenu()
+}
+
+const moveToBottom = () => {
+  if (contextMenuIndex.value === null) return
+  const element = elements.value[contextMenuIndex.value]
+  elements.value.splice(contextMenuIndex.value, 1)
+  elements.value.unshift(element)
+  selectedIndex.value = 0
+  hideContextMenu()
+}
+
+const moveToCenter = () => {
+  if (contextMenuIndex.value === null) return
+  const element = elements.value[contextMenuIndex.value]
+  const container = canvasContainer.value
+  if (!container) return
+
+  // 获取容器的尺寸
+  const containerWidth = container.offsetWidth
+  const containerHeight = container.offsetHeight
+
+  // 计算居中位置（使用百分比定位）
+  element.style.left = '50%'
+  element.style.top = '50%'
+  element.style.transform = 'translate(-50%, -50%)'
+
+  // 更新元素的初始中心点
+  element.initialCenter = {
+    x: Math.round(containerWidth / 2),
+    y: Math.round(containerHeight / 2)
+  }
+
+  hideContextMenu()
+}
+
 onMounted(() => {
   restoreData()
   if (elements.value.length > 0) {
@@ -1119,6 +1227,7 @@ onMounted(() => {
   window.addEventListener('mouseup', stopDrag)
   window.addEventListener('click', handleClickOutside)
   window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('click', hideContextMenu)
 })
 
 onUnmounted(() => {
@@ -1126,6 +1235,7 @@ onUnmounted(() => {
   window.removeEventListener('mouseup', stopDrag)
   window.removeEventListener('click', handleClickOutside)
   window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('click', hideContextMenu)
 })
 </script>
 
@@ -1239,6 +1349,7 @@ onUnmounted(() => {
   cursor: pointer;
   user-select: none;
   transition: all 0.2s ease;
+  position: relative;
 
   &:hover {
     background-color: #f8f8f8;
@@ -1814,5 +1925,38 @@ onUnmounted(() => {
 .image-icon svg {
   width: 16px;
   height: 16px;
+}
+
+.context-menu {
+  position: fixed;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 4px 0;
+  min-width: 120px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+}
+
+.context-menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 14px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
 }
 </style>

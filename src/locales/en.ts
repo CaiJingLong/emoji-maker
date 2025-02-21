@@ -15,6 +15,9 @@ export default {
     disableSnapping: 'Disable Snapping',
     showOtherBoundaries: 'Show Other Boundaries',
     hideOtherBoundaries: 'Hide Other Boundaries',
+    moveToTop: 'Move to Top',
+    moveToBottom: 'Move to Bottom',
+    moveToCenter: 'Move to Center',
   },
   editor: {
     textPlaceholder: 'Text',
