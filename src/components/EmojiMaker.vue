@@ -434,7 +434,6 @@ const getElementBounds = (element: Element, index: number): DOMRect | null => {
 const checkAlignment = (currentIndex: number) => {
   if (!draggedElement.value) return []
   if (!showGuidelines.value) return [] // 如果辅助线关闭，直接返回空数组
-  if (!enableSnapping.value) return [] // 如果吸附功能关闭，直接返回空数组
 
   guidelines.value = []
   snapState.value = []
@@ -460,11 +459,13 @@ const checkAlignment = (currentIndex: number) => {
       color: CONTAINER_GUIDELINE_COLOR,
       source: 'container',
     })
-    snapState.value.push({
-      isSnapped: true,
-      position: containerCenterX - currentBounds.width / 2,
-      type: 'vertical',
-    })
+    if (enableSnapping.value) {
+      snapState.value.push({
+        isSnapped: true,
+        position: containerCenterX - currentBounds.width / 2,
+        type: 'vertical',
+      })
+    }
   }
 
   // 检查垂直中心对齐
@@ -475,11 +476,13 @@ const checkAlignment = (currentIndex: number) => {
       color: CONTAINER_GUIDELINE_COLOR,
       source: 'container',
     })
-    snapState.value.push({
-      isSnapped: true,
-      position: containerCenterY - currentBounds.height / 2,
-      type: 'horizontal',
-    })
+    if (enableSnapping.value) {
+      snapState.value.push({
+        isSnapped: true,
+        position: containerCenterY - currentBounds.height / 2,
+        type: 'horizontal',
+      })
+    }
   }
 
   elements.value.forEach((element, index) => {
@@ -512,11 +515,13 @@ const checkAlignment = (currentIndex: number) => {
           color: elementColor,
           source: element.id,
         })
-        snapState.value.push({
-          isSnapped: true,
-          position: target - (current - parseInt(currentElement.style.left)),
-          type: 'vertical',
-        })
+        if (enableSnapping.value) {
+          snapState.value.push({
+            isSnapped: true,
+            position: target - (current - parseInt(currentElement.style.left)),
+            type: 'vertical',
+          })
+        }
       }
     })
 
@@ -542,11 +547,13 @@ const checkAlignment = (currentIndex: number) => {
           color: elementColor,
           source: element.id,
         })
-        snapState.value.push({
-          isSnapped: true,
-          position: target - (current - parseInt(currentElement.style.top)),
-          type: 'horizontal',
-        })
+        if (enableSnapping.value) {
+          snapState.value.push({
+            isSnapped: true,
+            position: target - (current - parseInt(currentElement.style.top)),
+            type: 'horizontal',
+          })
+        }
       }
     })
   })
@@ -984,8 +991,15 @@ const dropElement = (event: DragEvent, index: number) => {
     const draggedIndex = draggedData.index
     const elementToMove = elements.value[draggedIndex]
 
+    // 移除原位置的元素
     elements.value.splice(draggedIndex, 1)
+    // 插入到新位置
     elements.value.splice(index, 0, elementToMove)
+
+    // 重新分配所有元素的 id
+    elements.value.forEach((element, idx) => {
+      element.id = idx
+    })
 
     selectedIndex.value = index
   }
@@ -1158,7 +1172,8 @@ onUnmounted(() => {
   }
 
   &.hidden {
-    opacity: 0.5;
+    opacity: 0.6;
+    background-color: #fff;
   }
 
   &.dragging {
@@ -1185,11 +1200,11 @@ onUnmounted(() => {
 
   .text-icon {
     font-weight: bold;
-    color: #666;
+    color: #333;
   }
 
   .image-icon {
-    color: #666;
+    color: #333;
   }
 }
 
@@ -1206,12 +1221,12 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   padding: 4px;
-  color: #666;
+  color: #333;
   cursor: pointer;
   transition: color 0.2s ease;
 
   &:hover {
-    color: #333;
+    color: #000;
   }
 }
 
