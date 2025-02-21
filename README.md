@@ -39,19 +39,19 @@ git clone [项目地址]
 cd emoji-maker
 ```
 
-2. 安装依赖
+1. 安装依赖
 
 ```bash
 pnpm install
 ```
 
-3. 启动开发服务器
+1. 启动开发服务器
 
 ```bash
 pnpm dev
 ```
 
-4. 构建项目
+1. 构建项目
 
 ```bash
 pnpm build

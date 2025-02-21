@@ -1496,7 +1496,6 @@ onUnmounted(() => {
   object-fit: contain;
   transform-origin: center center;
   display: block;
-  vertical-align: top;
 }
 
 .text-element {

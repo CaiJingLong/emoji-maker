@@ -39,19 +39,19 @@ git clone [project URL]
 cd emoji-maker
 ```
 
-2. Install dependencies
+1. Install dependencies
 
 ```bash
 pnpm install
 ```
 
-3. Start development server
+1. Start development server
 
 ```bash
 pnpm dev
 ```
 
-4. Build project
+1. Build project
 
 ```bash
 pnpm build
@@ -85,4 +85,4 @@ Issues and Pull Requests are welcome.
 
 ## Acknowledgments
 
-This project was developed using the [Cursor](https://cursor.sh/) editor, with all code automatically generated and optimized by Cursor's built-in AI assistant (Claude), demonstrating the powerful capabilities of AI-assisted programming. Cursor is a revolutionary AI-driven code editor that not only provides intelligent code completion and refactoring suggestions but also enables complete feature development through natural language dialogue. Thanks to the Cursor team for developing such an excellent tool that makes programming more efficient and enjoyable. 
+This project was developed using the [Cursor](https://cursor.sh/) editor, with all code automatically generated and optimized by Cursor's built-in AI assistant (Claude), demonstrating the powerful capabilities of AI-assisted programming. Cursor is a revolutionary AI-driven code editor that not only provides intelligent code completion and refactoring suggestions but also enables complete feature development through natural language dialogue. Thanks to the Cursor team for developing such an excellent tool that makes programming more efficient and enjoyable.
