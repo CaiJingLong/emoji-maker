@@ -4,19 +4,21 @@
       <h3>{{ t('app.layers') }}</h3>
       <div class="layer-settings">
         <div class="setting-item" @click="toggleGuidelines">
-          <span class="setting-checkbox" :class="{'active': showGuidelines}"></span>
-          <span class="setting-label">{{ showGuidelines ? t('app.hideGuidelines') : t('app.showGuidelines') }}</span>
+          <span class="setting-checkbox" :class="{ active: showGuidelines }"></span>
+          <span class="setting-label">{{
+            showGuidelines ? t('app.hideGuidelines') : t('app.showGuidelines')
+          }}</span>
         </div>
         <div class="setting-item" @click="toggleSnapping">
           <span
             class="setting-checkbox"
             :class="{
-              'active': enableSnapping
+              active: enableSnapping,
             }"
           ></span>
-          <span
-            class="setting-label"
-          >{{ enableSnapping ? t('app.disableSnapping') : t('app.enableSnapping') }}</span>
+          <span class="setting-label">{{
+            enableSnapping ? t('app.disableSnapping') : t('app.enableSnapping')
+          }}</span>
         </div>
       </div>
       <ul class="layer-list">
@@ -26,8 +28,8 @@
           :data-index="index"
           class="layer-item"
           :class="{
-            'selected': selectedIndex === index,
-            'hidden': element.isVisible === false
+            selected: selectedIndex === index,
+            hidden: element.isVisible === false,
           }"
           @click.stop="selectElement(index)"
           draggable="true"
@@ -43,7 +45,15 @@
               </template>
               <template v-else>
                 <span class="image-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                     <circle cx="8.5" cy="8.5" r="1.5"></circle>
                     <polyline points="21 15 16 10 5 21"></polyline>
@@ -52,19 +62,40 @@
               </template>
             </span>
             <span class="layer-item-text">
-              {{ element.type === 'text' ? (element.content || t('editor.textPlaceholder')) : t('editor.image') }}
+              {{
+                element.type === 'text'
+                  ? element.content || t('editor.textPlaceholder')
+                  : t('editor.image')
+              }}
             </span>
           </div>
-          <span
-            class="layer-item-visibility"
-            @click="toggleVisibility(index, $event)"
-          >
-            <svg v-if="element.isVisible !== false" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <span class="layer-item-visibility" @click="toggleVisibility(index, $event)">
+            <svg
+              v-if="element.isVisible !== false"
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
               <circle cx="12" cy="12" r="3"></circle>
             </svg>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+              ></path>
               <line x1="1" y1="1" x2="23" y2="23"></line>
             </svg>
           </span>
@@ -81,7 +112,7 @@
               :class="guideline.type"
               :style="{
                 [guideline.type === 'vertical' ? 'left' : 'top']: `${guideline.position}px`,
-                borderColor: guideline.color
+                borderColor: guideline.color,
               }"
             ></div>
           </template>
@@ -91,8 +122,8 @@
             v-show="element.isVisible !== false"
             class="draggable-element"
             :class="{
-              'selected': selectedIndex === index,
-              'show-boundary': isDragging
+              selected: selectedIndex === index,
+              'show-boundary': isDragging,
             }"
             :style="{
               left: element.style.left,
@@ -104,7 +135,7 @@
               width: element.style.width,
               height: element.style.height,
               rotate: element.style.rotate,
-              '--element-color': ELEMENT_COLORS[element.id % ELEMENT_COLORS.length]
+              '--element-color': ELEMENT_COLORS[element.id % ELEMENT_COLORS.length],
             }"
             @mousedown="startDrag($event, index)"
             @click.stop="selectElement(index)"
@@ -120,12 +151,12 @@
                 v-text="element.content"
                 :style="{
                   fontSize: element.style.fontSize,
-                  color: element.style.color
+                  color: element.style.color,
                 }"
               ></div>
             </template>
             <template v-else>
-              <img :src="element.content" :alt="t('editor.image') + (index + 1)">
+              <img :src="element.content" :alt="t('editor.image') + (index + 1)" />
             </template>
           </div>
         </div>
@@ -143,14 +174,18 @@
             accept="image/*"
             style="display: none"
             multiple
-          >
+          />
         </div>
       </div>
 
       <div class="control-panel" v-if="selectedElement">
         <div class="panel-header">
-          <span>{{ selectedElement.type === 'text' ? t('editor.textSettings') : t('editor.imageSettings') }}</span>
-          <button class="delete-btn" @click="deleteElement(selectedIndex!)">{{ t('editor.delete') }}</button>
+          <span>{{
+            selectedElement.type === 'text' ? t('editor.textSettings') : t('editor.imageSettings')
+          }}</span>
+          <button class="delete-btn" @click="deleteElement(selectedIndex!)">
+            {{ t('editor.delete') }}
+          </button>
         </div>
         <div class="panel-content">
           <template v-if="selectedElement.type === 'text'">
@@ -162,7 +197,7 @@
                 min="12"
                 max="72"
                 @input="updateTextSize($event)"
-              >
+              />
               <span class="size-value">{{ selectedElement.style.fontSize }}</span>
             </div>
             <div class="control-item">
@@ -172,20 +207,40 @@
                 :value="selectedElement.style.color || '#000000'"
                 @input="updateTextColor($event)"
                 class="color-picker"
-              >
+              />
             </div>
             <div class="control-item">
               <label>{{ t('editor.borderStyle') }}</label>
-              <select @change="updateBorderStyle($event)" :value="selectedElement.style.borderStyle || 'none'" class="border-style-select">
+              <select
+                @change="updateBorderStyle($event)"
+                :value="selectedElement.style.borderStyle || 'none'"
+                class="border-style-select"
+              >
                 <option value="none">{{ t('editor.borderStyles.none') }}</option>
-                <option value="chat-bubble-green">{{ t('editor.borderStyles.chatBubbleGreen') }}</option>
-                <option value="chat-bubble-blue">{{ t('editor.borderStyles.chatBubbleBlue') }}</option>
-                <option value="chat-bubble-gray">{{ t('editor.borderStyles.chatBubbleGray') }}</option>
-                <option value="chat-bubble-green-right">{{ t('editor.borderStyles.chatBubbleGreenRight') }}</option>
-                <option value="chat-bubble-blue-right">{{ t('editor.borderStyles.chatBubbleBlueRight') }}</option>
-                <option value="chat-bubble-gray-right">{{ t('editor.borderStyles.chatBubbleGrayRight') }}</option>
-                <option value="chat-bubble-outline">{{ t('editor.borderStyles.chatBubbleOutline') }}</option>
-                <option value="chat-bubble-outline-right">{{ t('editor.borderStyles.chatBubbleOutlineRight') }}</option>
+                <option value="chat-bubble-green">
+                  {{ t('editor.borderStyles.chatBubbleGreen') }}
+                </option>
+                <option value="chat-bubble-blue">
+                  {{ t('editor.borderStyles.chatBubbleBlue') }}
+                </option>
+                <option value="chat-bubble-gray">
+                  {{ t('editor.borderStyles.chatBubbleGray') }}
+                </option>
+                <option value="chat-bubble-green-right">
+                  {{ t('editor.borderStyles.chatBubbleGreenRight') }}
+                </option>
+                <option value="chat-bubble-blue-right">
+                  {{ t('editor.borderStyles.chatBubbleBlueRight') }}
+                </option>
+                <option value="chat-bubble-gray-right">
+                  {{ t('editor.borderStyles.chatBubbleGrayRight') }}
+                </option>
+                <option value="chat-bubble-outline">
+                  {{ t('editor.borderStyles.chatBubbleOutline') }}
+                </option>
+                <option value="chat-bubble-outline-right">
+                  {{ t('editor.borderStyles.chatBubbleOutlineRight') }}
+                </option>
                 <option value="rounded">{{ t('editor.borderStyles.rounded') }}</option>
                 <option value="square">{{ t('editor.borderStyles.square') }}</option>
                 <option value="shadow">{{ t('editor.borderStyles.shadow') }}</option>
@@ -199,7 +254,7 @@
                 min="0"
                 max="360"
                 @input="updateRotation($event)"
-              >
+              />
               <span class="size-value">{{ selectedElement.style.rotate || '0' }}°</span>
             </div>
           </template>
@@ -212,7 +267,7 @@
                 min="20"
                 max="800"
                 @input="updateImageSize($event)"
-              >
+              />
               <span class="size-value">{{ selectedElement.style.width }}</span>
             </div>
             <div class="control-item">
@@ -223,7 +278,7 @@
                 min="0"
                 max="360"
                 @input="updateRotation($event)"
-              >
+              />
               <span class="size-value">{{ selectedElement.style.rotate || '0' }}°</span>
             </div>
           </template>
@@ -264,6 +319,7 @@ interface Element {
   }
   isEditing?: boolean
   isVisible?: boolean
+  initialCenter?: { x: number; y: number }
 }
 
 // 对齐辅助线接口
@@ -292,7 +348,7 @@ const elements = ref<Element[]>([])
 const draggedElement = ref<{ index: number; startX: number; startY: number } | null>(null)
 const selectedIndex = ref<number | null>(null)
 const selectedElement = computed(() =>
-  selectedIndex.value !== null ? elements.value[selectedIndex.value] : null
+  selectedIndex.value !== null ? elements.value[selectedIndex.value] : null,
 )
 const showExportDialog = ref(false)
 const isDragging = ref(false)
@@ -314,16 +370,16 @@ const snapState = ref<SnapInfo[]>([])
 // 添加颜色常量
 const CONTAINER_GUIDELINE_COLOR = '#FF0000' // 容器辅助线颜色改为纯红色
 const ELEMENT_COLORS = [
-  '#00FF00',   // 鲜绿色
-  '#0000FF',   // 纯蓝色
-  '#FF00FF',   // 洋红色
-  '#00FFFF',   // 青色
-  '#FFA500',   // 橙色
-  '#9400D3',   // 深紫色
-  '#FFD700',   // 金色
-  '#32CD32',   // 酸橙绿
-  '#FF69B4',   // 粉红色
-  '#4169E1'    // 皇家蓝
+  '#00FF00', // 鲜绿色
+  '#0000FF', // 纯蓝色
+  '#FF00FF', // 洋红色
+  '#00FFFF', // 青色
+  '#FFA500', // 橙色
+  '#9400D3', // 深紫色
+  '#FFD700', // 金色
+  '#32CD32', // 酸橙绿
+  '#FF69B4', // 粉红色
+  '#4169E1', // 皇家蓝
 ]
 
 // 计算元素的边界框
@@ -342,7 +398,7 @@ const getElementBounds = (element: Element, index: number): DOMRect | null => {
     elRect.left - containerRect.left - borderWidth,
     elRect.top - containerRect.top - borderWidth,
     elRect.width,
-    elRect.height
+    elRect.height,
   )
 }
 
@@ -374,12 +430,12 @@ const checkAlignment = (currentIndex: number) => {
       position: containerCenterX,
       type: 'vertical',
       color: CONTAINER_GUIDELINE_COLOR,
-      source: 'container'
+      source: 'container',
     })
     snapState.value.push({
       isSnapped: true,
       position: containerCenterX - currentBounds.width / 2,
-      type: 'vertical'
+      type: 'vertical',
     })
   }
 
@@ -389,12 +445,12 @@ const checkAlignment = (currentIndex: number) => {
       position: containerCenterY,
       type: 'horizontal',
       color: CONTAINER_GUIDELINE_COLOR,
-      source: 'container'
+      source: 'container',
     })
     snapState.value.push({
       isSnapped: true,
       position: containerCenterY - currentBounds.height / 2,
-      type: 'horizontal'
+      type: 'horizontal',
     })
   }
 
@@ -410,25 +466,28 @@ const checkAlignment = (currentIndex: number) => {
     const verticalAlignments = [
       { current: currentBounds.left, target: bounds.left }, // 左对齐
       { current: currentBounds.right, target: bounds.right }, // 右对齐
-      { current: currentBounds.left + currentBounds.width / 2, target: bounds.left + bounds.width / 2 }, // 中心对齐
+      {
+        current: currentBounds.left + currentBounds.width / 2,
+        target: bounds.left + bounds.width / 2,
+      }, // 中心对齐
       { current: currentBounds.right, target: bounds.left }, // 右边缘对左边缘
       { current: currentBounds.left, target: bounds.right }, // 左边缘对右边缘
       { current: currentBounds.left, target: bounds.right + SNAP_THRESHOLD }, // 水平等间距
-      { current: currentBounds.right, target: bounds.left - SNAP_THRESHOLD }  // 水平等间距
+      { current: currentBounds.right, target: bounds.left - SNAP_THRESHOLD }, // 水平等间距
     ]
 
-    verticalAlignments.forEach(({current, target}) => {
+    verticalAlignments.forEach(({ current, target }) => {
       if (Math.abs(current - target) < SNAP_THRESHOLD) {
         guidelines.value.push({
           position: target,
           type: 'vertical',
           color: elementColor,
-          source: element.id
+          source: element.id,
         })
         snapState.value.push({
           isSnapped: true,
           position: target - (current - parseInt(currentElement.style.left)),
-          type: 'vertical'
+          type: 'vertical',
         })
       }
     })
@@ -437,25 +496,28 @@ const checkAlignment = (currentIndex: number) => {
     const horizontalAlignments = [
       { current: currentBounds.top, target: bounds.top }, // 顶部对齐
       { current: currentBounds.bottom, target: bounds.bottom }, // 底部对齐
-      { current: currentBounds.top + currentBounds.height / 2, target: bounds.top + bounds.height / 2 }, // 中心对齐
+      {
+        current: currentBounds.top + currentBounds.height / 2,
+        target: bounds.top + bounds.height / 2,
+      }, // 中心对齐
       { current: currentBounds.bottom, target: bounds.top }, // 底边缘对顶边缘
       { current: currentBounds.top, target: bounds.bottom }, // 顶边缘对底边缘
       { current: currentBounds.top, target: bounds.bottom + SNAP_THRESHOLD }, // 垂直等间距
-      { current: currentBounds.bottom, target: bounds.top - SNAP_THRESHOLD }  // 垂直等间距
+      { current: currentBounds.bottom, target: bounds.top - SNAP_THRESHOLD }, // 垂直等间距
     ]
 
-    horizontalAlignments.forEach(({current, target}) => {
+    horizontalAlignments.forEach(({ current, target }) => {
       if (Math.abs(current - target) < SNAP_THRESHOLD) {
         guidelines.value.push({
           position: target,
           type: 'horizontal',
           color: elementColor,
-          source: element.id
+          source: element.id,
         })
         snapState.value.push({
           isSnapped: true,
           position: target - (current - parseInt(currentElement.style.top)),
-          type: 'horizontal'
+          type: 'horizontal',
         })
       }
     })
@@ -511,16 +573,24 @@ const redo = () => {
 }
 
 // 监听 elements 变化并保存到 localStorage
-watch(elements, (newElements) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(newElements))
-}, { deep: true })
+watch(
+  elements,
+  (newElements) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newElements))
+  },
+  { deep: true },
+)
 
 // 监听 elements 变化，自动添加历史记录
-watch(elements, () => {
-  if (!isHistoryAction.value) {
-    addHistory()
-  }
-}, { deep: true })
+watch(
+  elements,
+  () => {
+    if (!isHistoryAction.value) {
+      addHistory()
+    }
+  },
+  { deep: true },
+)
 
 // 从 localStorage 恢复数据
 const restoreData = () => {
@@ -541,13 +611,14 @@ const handleImageUpload = () => {
 const onFileSelected = (event: Event) => {
   const input = event.target as HTMLInputElement
   if (input.files && input.files.length > 0) {
-    Array.from(input.files).forEach(file => {
+    Array.from(input.files).forEach((file) => {
       const reader = new FileReader()
       reader.onload = (e) => {
         if (e.target?.result) {
-          const newId = elements.value.length > 0
-            ? Math.max(...elements.value.map(el => el.id)) + 1
-            : 0
+          const newId =
+            elements.value.length > 0 ? Math.max(...elements.value.map((el) => el.id)) + 1 : 0
+          const containerWidth = canvasContainer.value?.offsetWidth || 400
+          const containerHeight = canvasContainer.value?.offsetHeight || 400
           elements.value.push({
             type: 'image',
             content: e.target.result as string,
@@ -559,8 +630,12 @@ const onFileSelected = (event: Event) => {
               transform: 'translate(-50%, -50%)',
               width: '200px',
               height: 'auto',
-              rotate: '0deg'
-            }
+              rotate: '0deg',
+            },
+            initialCenter: {
+              x: Math.round(containerWidth / 2),
+              y: Math.round(containerHeight / 2),
+            },
           })
         }
       }
@@ -570,9 +645,9 @@ const onFileSelected = (event: Event) => {
 }
 
 const addText = () => {
-  const newId = elements.value.length > 0
-    ? Math.max(...elements.value.map(el => el.id)) + 1
-    : 0
+  const newId = elements.value.length > 0 ? Math.max(...elements.value.map((el) => el.id)) + 1 : 0
+  const containerWidth = canvasContainer.value?.offsetWidth || 400
+  const containerHeight = canvasContainer.value?.offsetHeight || 400
   elements.value.push({
     type: 'text',
     content: t('editor.textPlaceholder'),
@@ -585,9 +660,13 @@ const addText = () => {
       fontSize: '24px',
       color: '#000000',
       rotate: '0deg',
-      borderStyle: 'none'
+      borderStyle: 'none',
     },
-    isEditing: false
+    isEditing: false,
+    initialCenter: {
+      x: Math.round(containerWidth / 2),
+      y: Math.round(containerHeight / 2),
+    },
   })
 }
 
@@ -601,7 +680,7 @@ const startDrag = (event: MouseEvent | DragEvent, index?: number) => {
     if (element.isEditing) return
 
     const data = {
-      index: dragIndex
+      index: dragIndex,
     }
     dragEvent.dataTransfer?.setData('text', JSON.stringify(data))
     target.classList.add('dragging')
@@ -616,7 +695,7 @@ const startDrag = (event: MouseEvent | DragEvent, index?: number) => {
     draggedElement.value = {
       index,
       startX: mouseEvent.clientX - rect.left,
-      startY: mouseEvent.clientY - rect.top
+      startY: mouseEvent.clientY - rect.top,
     }
   }
 }
@@ -629,6 +708,20 @@ const onDrag = (event: MouseEvent) => {
 
   const index = draggedElement.value.index
   const element = elements.value[index]
+
+  // 如果没有初始中心点，计算并记录
+  if (!element.initialCenter) {
+    const elementNode = document.querySelector(
+      `.draggable-element:nth-child(${index + 1})`
+    ) as HTMLElement
+    if (elementNode) {
+      const rect = elementNode.getBoundingClientRect()
+      element.initialCenter = {
+        x: Math.round(rect.left - containerRect.left + rect.width / 2),
+        y: Math.round(rect.top - containerRect.top + rect.height / 2),
+      }
+    }
+  }
 
   // 计算鼠标相对于容器的位置
   const mouseX = event.clientX - containerRect.left
@@ -656,7 +749,7 @@ const onDrag = (event: MouseEvent) => {
   let finalY = targetY
 
   // 处理垂直方向的吸附
-  const verticalSnap = snaps.find(s => s.type === 'vertical')
+  const verticalSnap = snaps.find((s) => s.type === 'vertical')
   if (verticalSnap?.isSnapped) {
     const snapX = verticalSnap.position
     const diff = Math.abs(targetX - snapX)
@@ -669,7 +762,7 @@ const onDrag = (event: MouseEvent) => {
   }
 
   // 处理水平方向的吸附
-  const horizontalSnap = snaps.find(s => s.type === 'horizontal')
+  const horizontalSnap = snaps.find((s) => s.type === 'horizontal')
   if (horizontalSnap?.isSnapped) {
     const snapY = horizontalSnap.position
     const diff = Math.abs(targetY - snapY)
@@ -691,6 +784,25 @@ const stopDrag = () => {
   if (isDragging.value) {
     isDragging.value = false
     guidelines.value = []
+
+    // 更新被拖拽元素的中心点
+    if (draggedElement.value !== null) {
+      const index = draggedElement.value.index
+      const element = elements.value[index]
+      const containerRect = canvasContainer.value?.getBoundingClientRect()
+      const elementNode = document.querySelector(
+        `.draggable-element:nth-child(${index + 1})`
+      ) as HTMLElement
+
+      if (containerRect && elementNode) {
+        const rect = elementNode.getBoundingClientRect()
+        element.initialCenter = {
+          x: Math.round(rect.left - containerRect.left + rect.width / 2),
+          y: Math.round(rect.top - containerRect.top + rect.height / 2)
+        }
+      }
+    }
+
     addHistory()
   }
   draggedElement.value = null
@@ -708,7 +820,9 @@ const finishTextEdit = (index: number) => {
   if (element.type === 'text') {
     element.isEditing = false
     // 获取编辑后的文本内容
-    const textElement = document.querySelector(`.draggable-element:nth-child(${index + 1}) .text-element`) as HTMLElement
+    const textElement = document.querySelector(
+      `.draggable-element:nth-child(${index + 1}) .text-element`,
+    ) as HTMLElement
     if (textElement) {
       element.content = textElement.innerText || t('editor.textPlaceholder')
     }
@@ -732,26 +846,40 @@ const updateImageSize = (event: Event) => {
   const width = Math.min(parseInt(input.value), 800) // 限制最大宽度为800px
   const element = elements.value[selectedIndex.value]
 
-  // 获取当前元素的位置和尺寸信息
-  const currentWidth = parseInt(element.style.width || '200')
-  const currentLeft = parseInt(element.style.left || '0')
-  const currentTop = parseInt(element.style.top || '0')
+  // 如果元素没有记录初始中心点，则计算并记录
+  if (!element.initialCenter) {
+    const currentWidth = parseInt(element.style.width || '200')
+    const currentHeight = parseInt(element.style.height || '200')
+    const currentLeft = parseInt(element.style.left || '0')
+    const currentTop = parseInt(element.style.top || '0')
 
-  // 计算中心点位置
-  const centerX = currentLeft + currentWidth / 2
-  const centerY = currentTop + parseInt(element.style.height || '0') / 2
+    element.initialCenter = {
+      x: Math.round(currentLeft + currentWidth / 2),
+      y: Math.round(currentTop + currentHeight / 2),
+    }
+  }
 
-  // 设置新的宽度
+  // 获取图片元素以计算宽高比
+  const elementNode = document.querySelector(
+    `.draggable-element:nth-child(${selectedIndex.value + 1})`,
+  ) as HTMLElement
+  if (!elementNode) return
+  const imgElement = elementNode.querySelector('img') as HTMLImageElement
+  if (!imgElement) return
+  const aspectRatio = imgElement.naturalHeight / imgElement.naturalWidth
+
+  // 计算新的高度（使用 Math.round 确保整数）
+  const newHeight = Math.round(width * aspectRatio)
+
+  // 使用初始中心点计算新的位置
+  const newLeft = Math.round(element.initialCenter.x - width / 2)
+  const newTop = Math.round(element.initialCenter.y - newHeight / 2)
+
+  // 一次性应用所有样式
   element.style.width = `${width}px`
-  element.style.height = 'auto'
-
-  // 在下一个事件循环中更新位置，确保新的尺寸已经应用
-  setTimeout(() => {
-    const newHeight = (document.querySelector(`.draggable-element:nth-child(${selectedIndex.value! + 1}) img`) as HTMLImageElement)?.height || 0
-    // 根据新的尺寸重新计算左上角位置，保持中心点不变
-    element.style.left = `${centerX - width / 2}px`
-    element.style.top = `${centerY - newHeight / 2}px`
-  }, 0)
+  element.style.height = `${newHeight}px`
+  element.style.left = `${newLeft}px`
+  element.style.top = `${newTop}px`
 }
 
 const updateRotation = (event: Event) => {
@@ -785,7 +913,9 @@ const updateTextColor = (event: Event) => {
 
 const handleKeyDown = (event: KeyboardEvent) => {
   // 检查是否有正在编辑的文字元素
-  const hasEditingText = elements.value.some(element => element.type === 'text' && element.isEditing)
+  const hasEditingText = elements.value.some(
+    (element) => element.type === 'text' && element.isEditing,
+  )
 
   // 如果正在编辑文字，不处理快捷键
   if (hasEditingText) return
@@ -802,9 +932,11 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
 
   // 处理重做快捷键 (Ctrl+Y / Command+Y 或 Ctrl+Shift+Z / Command+Shift+Z)
-  if ((event.ctrlKey || event.metaKey) &&
-      ((event.key.toLowerCase() === 'y' && !event.shiftKey) ||
-       (event.key.toLowerCase() === 'z' && event.shiftKey))) {
+  if (
+    (event.ctrlKey || event.metaKey) &&
+    ((event.key.toLowerCase() === 'y' && !event.shiftKey) ||
+      (event.key.toLowerCase() === 'z' && event.shiftKey))
+  ) {
     event.preventDefault()
     redo()
   }
@@ -957,8 +1089,8 @@ onUnmounted(() => {
 }
 
 .setting-checkbox.active {
-  background-color: #4CAF50;
-  border-color: #4CAF50;
+  background-color: #4caf50;
+  border-color: #4caf50;
 }
 
 .setting-checkbox.active::after {
@@ -999,7 +1131,7 @@ onUnmounted(() => {
 
 .layer-item.selected {
   background: #e8f5e9;
-  border-color: #4CAF50;
+  border-color: #4caf50;
 }
 
 .layer-item:hover {
@@ -1076,12 +1208,17 @@ onUnmounted(() => {
   width: min(800px, 90vmin);
   height: min(800px, 90vmin);
   background-color: transparent;
-  background-image: linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+  background-image:
+    linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
     linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
     linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
     linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
   background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0px;
   border: 2px dashed #ccc;
   border-radius: 8px;
   position: relative;
@@ -1093,7 +1230,7 @@ onUnmounted(() => {
   position: absolute;
   pointer-events: none;
   z-index: 1000;
-  display: v-show="showGuidelines";
+  display: v-show= 'showGuidelines';
 }
 
 .guideline.horizontal {
@@ -1166,7 +1303,7 @@ onUnmounted(() => {
   color: #666;
 }
 
-.control-item input[type="range"] {
+.control-item input[type='range'] {
   width: 100%;
   margin-bottom: 5px;
 }
@@ -1221,8 +1358,8 @@ onUnmounted(() => {
   font-size: inherit; /* 恢复文字的字体大小继承 */
 }
 
-.text-element[contenteditable="true"] {
-  border-color: #4CAF50;
+.text-element[contenteditable='true'] {
+  border-color: #4caf50;
   outline: none;
   cursor: text;
   min-width: 50px;
@@ -1253,7 +1390,7 @@ onUnmounted(() => {
   max-width: 200px;
   padding: 12px 20px;
   margin: 0;
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
   border: none;
   border-radius: 4px;
@@ -1268,7 +1405,7 @@ onUnmounted(() => {
 }
 
 .tools-container button.toggle-btn.active {
-  background-color: #4CAF50;
+  background-color: #4caf50;
 }
 
 .tools-container button.toggle-btn:disabled {
@@ -1304,7 +1441,7 @@ onUnmounted(() => {
   padding: 10px 15px;
   position: relative;
   border: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .text-element.chat-bubble-green::before {
@@ -1323,7 +1460,7 @@ onUnmounted(() => {
   padding: 10px 15px;
   position: relative;
   border: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .text-element.chat-bubble-blue::before {
@@ -1342,7 +1479,7 @@ onUnmounted(() => {
   padding: 10px 15px;
   position: relative;
   border: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .text-element.chat-bubble-gray::before {
@@ -1361,7 +1498,7 @@ onUnmounted(() => {
   padding: 10px 15px;
   position: relative;
   border: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .text-element.chat-bubble-green-right::before {
@@ -1380,7 +1517,7 @@ onUnmounted(() => {
   padding: 10px 15px;
   position: relative;
   border: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .text-element.chat-bubble-blue-right::before {
@@ -1399,7 +1536,7 @@ onUnmounted(() => {
   padding: 10px 15px;
   position: relative;
   border: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .text-element.chat-bubble-gray-right::before {
@@ -1417,8 +1554,8 @@ onUnmounted(() => {
   border-radius: 20px;
   padding: 10px 15px;
   position: relative;
-  border: 2px solid #4CAF50;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 2px solid #4caf50;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .text-element.chat-bubble-outline::before,
@@ -1432,7 +1569,7 @@ onUnmounted(() => {
 .text-element.chat-bubble-outline::before {
   border-width: 12px 12px 0;
   border-style: solid;
-  border-color: #4CAF50 transparent transparent;
+  border-color: #4caf50 transparent transparent;
   bottom: -12px;
 }
 
@@ -1448,8 +1585,8 @@ onUnmounted(() => {
   border-radius: 20px;
   padding: 10px 15px;
   position: relative;
-  border: 2px solid #4CAF50;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 2px solid #4caf50;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .text-element.chat-bubble-outline-right::before,
@@ -1463,7 +1600,7 @@ onUnmounted(() => {
 .text-element.chat-bubble-outline-right::before {
   border-width: 12px 12px 0;
   border-style: solid;
-  border-color: #4CAF50 transparent transparent;
+  border-color: #4caf50 transparent transparent;
   bottom: -12px;
 }
 
@@ -1475,18 +1612,18 @@ onUnmounted(() => {
 }
 
 .text-element.rounded {
-  border: 2px solid #4CAF50;
+  border: 2px solid #4caf50;
   border-radius: 10px;
   padding: 8px 15px;
 }
 
 .text-element.square {
-  border: 2px solid #4CAF50;
+  border: 2px solid #4caf50;
   padding: 8px 15px;
 }
 
 .text-element.shadow {
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   padding: 8px 15px;
   border-radius: 4px;
 }
