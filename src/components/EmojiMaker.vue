@@ -1062,6 +1062,126 @@ const handleKeyDown = (event: KeyboardEvent) => {
     event.preventDefault()
     redo()
   }
+
+  // 处理粘贴快捷键 (Ctrl+V / Command+V)
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
+    event.preventDefault()
+    // 不再使用 execCommand('paste')，而是直接从剪贴板读取
+    navigator.clipboard.read().then(async (clipboardItems) => {
+      for (const clipboardItem of clipboardItems) {
+        // 优先处理图片
+        for (const type of clipboardItem.types) {
+          if (type.startsWith('image/')) {
+            const blob = await clipboardItem.getType(type)
+            const reader = new FileReader()
+            reader.onload = (e) => {
+              if (e.target?.result) {
+                addElementToCanvas({
+                  type: 'image',
+                  content: e.target.result as string,
+                  style: {
+                    width: '200px',
+                    height: 'auto'
+                  }
+                })
+              }
+            }
+            reader.readAsDataURL(blob)
+            return
+          }
+        }
+        // 如果没有图片，尝试读取文本
+        if (clipboardItem.types.includes('text/plain')) {
+          const text = await clipboardItem.getType('text/plain')
+          const textContent = await text.text()
+          if (textContent.trim()) {
+            addElementToCanvas({
+              type: 'text',
+              content: textContent,
+              style: {
+                fontSize: '24px',
+                color: '#000000'
+              }
+            })
+          }
+        }
+      }
+    }).catch((error) => {
+      console.error('读取剪贴板失败:', error)
+    })
+  }
+}
+
+// 添加一个新的辅助函数来处理元素添加
+const addElementToCanvas = (elementData: { type: 'text' | 'image', content: string, style: Record<string, string> }) => {
+  const newId = elements.value.length > 0 ? Math.max(...elements.value.map((el) => el.id)) + 1 : 0
+  const containerWidth = canvasContainer.value?.offsetWidth || 400
+  const containerHeight = canvasContainer.value?.offsetHeight || 400
+
+  elements.value.push({
+    type: elementData.type,
+    content: elementData.content,
+    id: newId,
+    style: {
+      left: '50%',
+      top: '50%',
+      position: 'absolute',
+      transform: 'translate(-50%, -50%)',
+      rotate: '0deg',
+      borderStyle: 'none',
+      ...elementData.style
+    },
+    isEditing: false,
+    initialCenter: {
+      x: Math.round(containerWidth / 2),
+      y: Math.round(containerHeight / 2),
+    },
+  })
+}
+
+// 修改 handlePaste 函数
+const handlePaste = async (event: ClipboardEvent) => {
+  event.preventDefault()
+  const clipboardData = event.clipboardData
+  if (!clipboardData) return
+
+  // 优先处理图片
+  const items = clipboardData.items
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile()
+      if (file) {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            addElementToCanvas({
+              type: 'image',
+              content: e.target.result as string,
+              style: {
+                width: '200px',
+                height: 'auto'
+              }
+            })
+          }
+        }
+        reader.readAsDataURL(file)
+        return
+      }
+    }
+  }
+
+  // 如果没有图片，尝试处理文本
+  const text = clipboardData.getData('text/plain')
+  if (text.trim()) {
+    addElementToCanvas({
+      type: 'text',
+      content: text,
+      style: {
+        fontSize: '24px',
+        color: '#000000'
+      }
+    })
+  }
 }
 
 const updateBorderStyle = (event: Event) => {
@@ -1251,6 +1371,8 @@ onMounted(() => {
   window.addEventListener('click', handleClickOutside)
   window.addEventListener('keydown', handleKeyDown)
   window.addEventListener('click', hideContextMenu)
+  // 添加粘贴事件监听
+  window.addEventListener('paste', handlePaste)
 })
 
 onUnmounted(() => {
@@ -1259,6 +1381,7 @@ onUnmounted(() => {
   window.removeEventListener('click', handleClickOutside)
   window.removeEventListener('keydown', handleKeyDown)
   window.removeEventListener('click', hideContextMenu)
+  window.removeEventListener('paste', handlePaste)
 })
 </script>
 
