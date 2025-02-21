@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, watchEffect, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useLanguageStore } from '../stores/language'
 import html2canvas from 'html2canvas'
 
@@ -88,12 +88,11 @@ const bgType = ref('transparent')
 const bgColor = ref('#ffffff')
 const quality = ref('2')
 const previewSize = ref('')
-const previewTimer = ref<number | null>(null)
 const thumbnailUrl = ref('')
 const dimensions = ref('')
 
 // 防抖函数
-const debounce = <T extends (...args: any[]) => any>(fn: T, delay: number) => {
+const debounce = <T extends (...args: Parameters<T>) => ReturnType<T>>(fn: T, delay: number) => {
   let timer: number | null = null
   return (...args: Parameters<T>) => {
     if (timer) window.clearTimeout(timer)

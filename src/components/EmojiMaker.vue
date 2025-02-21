@@ -224,7 +224,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
-import html2canvas from 'html2canvas'
 import { useLanguageStore } from '../stores/language'
 import ExportDialog from './ExportDialog.vue'
 
