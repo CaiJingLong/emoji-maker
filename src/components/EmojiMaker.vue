@@ -114,6 +114,17 @@
                 enableSnapping ? t('app.disableSnapping') : t('app.enableSnapping')
               }}</span>
             </div>
+            <div class="setting-item" @click="toggleOtherBoundaries">
+              <span
+                class="setting-checkbox"
+                :class="{
+                  active: showOtherBoundaries,
+                }"
+              ></span>
+              <span class="setting-label">{{
+                showOtherBoundaries ? t('app.hideOtherBoundaries') : t('app.showOtherBoundaries')
+              }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -139,7 +150,7 @@
             class="draggable-element"
             :class="{
               selected: selectedIndex === index,
-              'show-boundary': isDragging,
+              'show-boundary': isDragging && (selectedIndex === index || showOtherBoundaries),
             }"
             :style="{
               left: element.style.left,
@@ -396,6 +407,7 @@ const isDragging = ref(false)
 // 添加辅助线和吸附功能的开关状态
 const showGuidelines = ref(localStorage.getItem(GUIDELINES_STORAGE_KEY) === 'true') // 从 localStorage 读取状态
 const enableSnapping = ref(localStorage.getItem(SNAPPING_STORAGE_KEY) === 'true') // 从 localStorage 读取状态
+const showOtherBoundaries = ref(localStorage.getItem('emoji-maker-show-boundaries') === 'true') // 新增：是否显示其他组件边界线
 
 // 历史记录相关的状态
 const MAX_HISTORY = 50 // 最大历史记录数
@@ -1055,6 +1067,11 @@ const toggleSnapping = () => {
   }
 }
 
+const toggleOtherBoundaries = () => {
+  showOtherBoundaries.value = !showOtherBoundaries.value
+  localStorage.setItem('emoji-maker-show-boundaries', showOtherBoundaries.value.toString())
+}
+
 // 监听辅助线状态变化
 watch(showGuidelines, (newValue) => {
   if (!newValue) {
@@ -1094,6 +1111,9 @@ onMounted(() => {
   if (!showGuidelines.value && enableSnapping.value) {
     enableSnapping.value = false
   }
+
+  // 从 localStorage 恢复边界线显示状态
+  showOtherBoundaries.value = localStorage.getItem('emoji-maker-show-boundaries') === 'true'
 
   window.addEventListener('mousemove', onDrag)
   window.addEventListener('mouseup', stopDrag)

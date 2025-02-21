@@ -13,6 +13,8 @@ export default {
     hideGuidelines: 'Hide Guidelines',
     enableSnapping: 'Enable Snapping',
     disableSnapping: 'Disable Snapping',
+    showOtherBoundaries: 'Show Other Boundaries',
+    hideOtherBoundaries: 'Hide Other Boundaries',
   },
   editor: {
     textPlaceholder: 'Text',

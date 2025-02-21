@@ -13,6 +13,8 @@ export default {
     hideGuidelines: '隐藏辅助线',
     enableSnapping: '开启吸附',
     disableSnapping: '关闭吸附',
+    showOtherBoundaries: '显示其他组件边界',
+    hideOtherBoundaries: '隐藏其他组件边界',
   },
   editor: {
     textPlaceholder: '文字',
