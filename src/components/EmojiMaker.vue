@@ -18,7 +18,12 @@
           <span class="accordion-icon" :class="{ 'is-expanded': isLayersExpanded }">▼</span>
         </div>
         <div class="accordion-content" :class="{ 'is-expanded': isLayersExpanded }">
-          <ul class="layer-list">
+          <ul class="layer-list"
+            @dragover.prevent.stop
+            @drop.prevent.stop
+            @dragenter.prevent.stop
+            @dragleave.prevent.stop
+          >
             <li
               v-for="(element, index) in elements"
               :key="index"
@@ -29,12 +34,11 @@
                 hidden: element.isVisible === false,
               }"
               @click.stop="selectElement(index)"
-              @contextmenu.prevent="showContextMenu($event, index)"
+              @contextmenu.prevent.stop="showContextMenu($event, index)"
               draggable="true"
-              @dragstart="startDrag"
-              @dragover.prevent
-              @drop="dropElement($event, index)"
-              @dragend="stopDrag"
+              @dragstart.stop="startDrag($event, undefined)"
+              @dragend.stop="stopLayerDrag"
+              @drop.stop="dropElement($event, index)"
             >
               <div class="layer-item-content">
                 <span class="layer-item-icon">
@@ -850,6 +854,39 @@ const addText = () => {
   elements.value.push(element)
 }
 
+const isDraggingOver = ref(false)
+const isInternalDrag = ref(false)  // 添加内部拖拽标记
+
+// 处理拖入事件
+const handleDragEnter = (event: DragEvent) => {
+  // 如果是内部拖拽，不显示拖入遮罩
+  if (isInternalDrag.value) return
+  // 如果有对话框打开，不显示拖入遮罩
+  if (showExportDialog.value || showConfirmDialog.value) return
+  event.preventDefault()
+  isDraggingOver.value = true
+  if (canvasContainer.value) {
+    canvasContainer.value.classList.add('drag-active')
+  }
+}
+
+// 处理拖离事件
+const handleDragLeave = (event: DragEvent) => {
+  if (isInternalDrag.value) return
+  event.preventDefault()
+  // 检查是否真的离开了容器
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  const x = event.clientX
+  const y = event.clientY
+
+  if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
+    isDraggingOver.value = false
+    if (canvasContainer.value) {
+      canvasContainer.value.classList.remove('drag-active')
+    }
+  }
+}
+
 const startDrag = (event: MouseEvent | DragEvent, index?: number) => {
   if (index === undefined) {
     // 处理图层面板的拖拽
@@ -859,8 +896,11 @@ const startDrag = (event: MouseEvent | DragEvent, index?: number) => {
     const element = elements.value[dragIndex]
     if (element.isEditing) return
 
+    isInternalDrag.value = true  // 设置内部拖拽标记
     const data = {
       index: dragIndex,
+      isInternal: true,  // 添加内部拖拽标识
+      isLayerSort: true  // 添加图层排序标识
     }
     dragEvent.dataTransfer?.setData('text', JSON.stringify(data))
     target.classList.add('dragging')
@@ -1335,40 +1375,16 @@ const handleDragOver = (event: DragEvent) => {
   }
 }
 
-// 添加拖放状态
-const isDraggingOver = ref(false)
-
-// 处理拖入事件
-const handleDragEnter = (event: DragEvent) => {
-  // 如果有对话框打开，不显示拖入遮罩
-  if (showExportDialog.value || showConfirmDialog.value) return
-  event.preventDefault()
-  isDraggingOver.value = true
-  if (canvasContainer.value) {
-    canvasContainer.value.classList.add('drag-active')
-  }
-}
-
-// 处理拖离事件
-const handleDragLeave = (event: DragEvent) => {
-  event.preventDefault()
-  // 检查是否真的离开了容器
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-  const x = event.clientX
-  const y = event.clientY
-
-  if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
-    isDraggingOver.value = false
-    if (canvasContainer.value) {
-      canvasContainer.value.classList.remove('drag-active')
-    }
-  }
-}
-
 // 修改现有的 handleExternalDrop 函数
 const handleExternalDrop = async (event: DragEvent) => {
   event.preventDefault()
   event.stopPropagation()
+
+  // 如果是从图层列表拖拽的，不处理
+  const target = event.target as HTMLElement
+  if (target.closest('.layer-list')) {
+    return
+  }
 
   // 重置拖放状态
   isDraggingOver.value = false
@@ -1461,26 +1477,51 @@ onUnmounted(() => {
   window.removeEventListener('click', hideContextMenu)
 })
 
+const stopLayerDrag = (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  const target = event.target as HTMLElement
+  target.classList.remove('dragging')
+  isInternalDrag.value = false
+}
+
 const dropElement = (event: DragEvent, index: number) => {
   event.preventDefault()
+  event.stopPropagation()
+  
+  // 如果不是从图层列表拖拽的，直接返回
+  const target = event.target as HTMLElement
+  if (!target.closest('.layer-list')) {
+    return
+  }
+
   const data = event.dataTransfer?.getData('text')
   if (data) {
-    const draggedData = JSON.parse(data)
-    const draggedIndex = draggedData.index
-    const elementToMove = elements.value[draggedIndex]
+    try {
+      const draggedData = JSON.parse(data)
+      // 只处理内部图层排序的拖拽
+      if (draggedData.isInternal && draggedData.isLayerSort) {
+        const draggedIndex = draggedData.index
+        const elementToMove = elements.value[draggedIndex]
 
-    // 移除原位置的元素
-    elements.value.splice(draggedIndex, 1)
-    // 插入到新位置
-    elements.value.splice(index, 0, elementToMove)
+        // 移除原位置的元素
+        elements.value.splice(draggedIndex, 1)
+        // 插入到新位置
+        elements.value.splice(index, 0, elementToMove)
 
-    // 重新分配所有元素的 id
-    elements.value.forEach((element, idx) => {
-      element.id = idx
-    })
+        // 重新分配所有元素的 id
+        elements.value.forEach((element, idx) => {
+          element.id = idx
+        })
 
-    selectedIndex.value = index
+        selectedIndex.value = index
+        addHistory()
+      }
+    } catch (e) {
+      console.error('Invalid drag data')
+    }
   }
+  isInternalDrag.value = false
 }
 
 const toggleVisibility = (index: number, event: Event) => {
