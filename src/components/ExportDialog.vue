@@ -23,12 +23,7 @@
               <option value="transparent">{{ t('editor.transparent') }}</option>
               <option value="color">{{ t('editor.solidColor') }}</option>
             </select>
-            <input
-              v-if="bgType === 'color'"
-              type="color"
-              v-model="bgColor"
-              class="color-picker"
-            >
+            <ColorPicker v-if="bgType === 'color'" v-model="bgColor" />
           </div>
         </div>
 
@@ -72,6 +67,7 @@
 import { ref, watch, onMounted } from 'vue'
 import { useLanguageStore } from '../stores/language'
 import html2canvas from 'html2canvas'
+import ColorPicker from './ColorPicker.vue'
 
 const { t } = useLanguageStore()
 
@@ -85,7 +81,8 @@ const emit = defineEmits<{
 
 const format = ref('png')
 const bgType = ref('transparent')
-const bgColor = ref('#ffffff')
+const bgColor = ref('rgba(255, 255, 255, 1)')
+const bgAlpha = ref(100)
 const quality = ref('2')
 const previewSize = ref('')
 const thumbnailUrl = ref('')
@@ -304,15 +301,6 @@ onMounted(() => {
 
 .color-setting select {
   flex: 1;
-}
-
-.color-picker {
-  width: 40px;
-  height: 34px;
-  padding: 0;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
 }
 
 .preview-info {
