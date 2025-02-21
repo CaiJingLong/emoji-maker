@@ -1,0 +1,223 @@
+.emoji-maker {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  width: 100%;
+  background-color: #f5f5f5;
+  position: relative;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.canvas-area {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background-color: white;
+  margin: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.canvas-container {
+  width: min(800px, 90vmin);
+  height: min(800px, 90vmin);
+  background-color: transparent;
+  background-image:
+    linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+    linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+    linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+  background-size: 20px 20px;
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s, border-style 0.3s;
+  z-index: 1;
+}
+
+.canvas-container.drag-active {
+  border-color: #4caf50;
+  border-style: solid;
+  box-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
+  transform: scale(1.01);
+  transition: all 0.3s ease;
+}
+
+.guideline {
+  position: absolute;
+  pointer-events: none;
+  z-index: 10;
+  display: v-show= 'showGuidelines';
+}
+
+.guideline.horizontal {
+  width: 100%;
+  height: 0;
+  border-top: 1px dashed;
+  left: 0;
+}
+
+.guideline.vertical {
+  width: 0;
+  height: 100%;
+  border-left: 1px dashed;
+  top: 0;
+}
+
+@media (max-height: 1000px) {
+  .canvas-container {
+    width: min(800px, calc(100vh - 180px));
+    height: min(800px, calc(100vh - 180px));
+  }
+}
+
+.draggable-element {
+  position: absolute;
+  cursor: move;
+  user-select: none;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  transform-origin: center center;
+  transition: border-color 0.2s;
+}
+
+.draggable-element.show-boundary {
+  border-color: var(--element-color);
+}
+
+.draggable-element.selected {
+  border-color: var(--element-color);
+}
+
+.draggable-element:has(img) {
+  line-height: 0;
+  font-size: 0;
+}
+
+.draggable-element img {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  object-fit: contain;
+  transform-origin: center center;
+  display: block;
+}
+
+.tools-panel {
+  flex-shrink: 0;
+  background-color: white;
+  padding: 15px;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+  margin: 0;
+  width: 100%;
+}
+
+.tools-container {
+  width: min(800px, 90vmin);
+  margin: 0 auto;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+
+.tools-group {
+  display: flex;
+  gap: 8px;
+}
+
+.tools-container button {
+  flex: 0 1 auto;
+  min-width: 80px;
+  padding: 8px 12px;
+  margin: 0;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: background-color 0.3s;
+}
+
+.tools-container button.toggle-btn {
+  background-color: #666;
+}
+
+.tools-container button.toggle-btn.active {
+  background-color: #4caf50;
+}
+
+.tools-container button.toggle-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.tools-container button:hover {
+  background-color: #45a049;
+}
+
+.tools-container button.clear-btn {
+  background-color: #ff4444;
+}
+
+.tools-container button.clear-btn:hover {
+  background-color: #ff0000;
+}
+
+.drag-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.drag-hint {
+  position: relative;
+  z-index: 101;
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 24px 32px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: #333;
+  font-size: 18px;
+  font-weight: 500;
+  text-align: center;
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+}
+
+.drag-hint svg {
+  width: 48px;
+  height: 48px;
+  color: #4caf50;
+  animation: bounce 1s infinite;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+} 
