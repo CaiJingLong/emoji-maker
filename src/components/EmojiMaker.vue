@@ -209,7 +209,7 @@
               <input
                 type="range"
                 :value="parseInt(selectedElement.style.width || '200')"
-                min="50"
+                min="20"
                 max="800"
                 @input="updateImageSize($event)"
               >
@@ -730,10 +730,28 @@ const updateImageSize = (event: Event) => {
   if (selectedIndex.value === null) return
   const input = event.target as HTMLInputElement
   const width = Math.min(parseInt(input.value), 800) // 限制最大宽度为800px
-  elements.value[selectedIndex.value].style.width = `${width}px`
-  elements.value[selectedIndex.value].style.height = 'auto'
-  // 更新input的值，以防超出限制
-  input.value = width.toString()
+  const element = elements.value[selectedIndex.value]
+
+  // 获取当前元素的位置和尺寸信息
+  const currentWidth = parseInt(element.style.width || '200')
+  const currentLeft = parseInt(element.style.left || '0')
+  const currentTop = parseInt(element.style.top || '0')
+
+  // 计算中心点位置
+  const centerX = currentLeft + currentWidth / 2
+  const centerY = currentTop + parseInt(element.style.height || '0') / 2
+
+  // 设置新的宽度
+  element.style.width = `${width}px`
+  element.style.height = 'auto'
+
+  // 在下一个事件循环中更新位置，确保新的尺寸已经应用
+  setTimeout(() => {
+    const newHeight = (document.querySelector(`.draggable-element:nth-child(${selectedIndex.value! + 1}) img`) as HTMLImageElement)?.height || 0
+    // 根据新的尺寸重新计算左上角位置，保持中心点不变
+    element.style.left = `${centerX - width / 2}px`
+    element.style.top = `${centerY - newHeight / 2}px`
+  }, 0)
 }
 
 const updateRotation = (event: Event) => {
