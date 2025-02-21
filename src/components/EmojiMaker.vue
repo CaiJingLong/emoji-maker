@@ -192,6 +192,8 @@
                 :style="{
                   fontSize: element.style.fontSize,
                   color: element.style.color,
+                  backgroundColor: element.style.backgroundColor,
+                  padding: element.style.padding,
                 }"
               ></div>
             </template>
@@ -253,6 +255,26 @@
                 @input="updateTextColor($event)"
                 class="color-picker"
               />
+            </div>
+            <div class="control-item">
+              <label>{{ t('editor.backgroundColor') }}</label>
+              <input
+                type="color"
+                :value="selectedElement.style.backgroundColor || '#ffffff'"
+                @input="updateBackgroundColor($event)"
+                class="color-picker"
+              />
+            </div>
+            <div class="control-item">
+              <label>{{ t('editor.padding') }}</label>
+              <input
+                type="range"
+                :value="parseInt(selectedElement.style.padding || '5')"
+                min="0"
+                max="50"
+                @input="updatePadding($event)"
+              />
+              <span class="size-value">{{ selectedElement.style.padding || '5px' }}</span>
             </div>
             <div class="control-item">
               <label>{{ t('editor.borderStyle') }}</label>
@@ -383,7 +405,10 @@
         </div>
       </div>
     </div>
+  </div>
 
+  <!-- 将对话框移到最外层 -->
+  <Teleport to="body">
     <ExportDialog
       v-if="showExportDialog"
       :container="canvasContainer"
@@ -398,7 +423,7 @@
       @close="showConfirmDialog = false"
       @confirm="clearAllElements"
     />
-  </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -425,6 +450,8 @@ interface Element {
     rotate?: string
     borderStyle?: string
     opacity?: string
+    backgroundColor?: string
+    padding?: string
   }
   isEditing?: boolean
   isVisible?: boolean
@@ -963,6 +990,7 @@ const finishTextEdit = (index: number) => {
 }
 
 const exportImage = () => {
+  isDraggingOver.value = false
   showExportDialog.value = true
 }
 
@@ -1042,6 +1070,24 @@ const updateTextColor = (event: Event) => {
   if (selectedIndex.value === null) return
   const input = event.target as HTMLInputElement
   elements.value[selectedIndex.value].style.color = input.value
+}
+
+const updateBackgroundColor = (event: Event) => {
+  if (selectedIndex.value === null) return
+  const input = event.target as HTMLInputElement
+  elements.value[selectedIndex.value].style.backgroundColor = input.value
+}
+
+const updatePadding = (event: Event) => {
+  if (selectedIndex.value === null) return
+  const input = event.target as HTMLInputElement
+  elements.value[selectedIndex.value].style.padding = `${input.value}px`
+}
+
+const updateBorderStyle = (event: Event) => {
+  if (selectedIndex.value === null) return
+  const select = event.target as HTMLSelectElement
+  elements.value[selectedIndex.value].style.borderStyle = select.value
 }
 
 const handleKeyDown = (event: KeyboardEvent) => {
@@ -1197,77 +1243,6 @@ const handlePaste = async (event: ClipboardEvent) => {
   }
 }
 
-const updateBorderStyle = (event: Event) => {
-  if (selectedIndex.value === null) return
-  const select = event.target as HTMLSelectElement
-  elements.value[selectedIndex.value].style.borderStyle = select.value
-}
-
-const dropElement = (event: DragEvent, index: number) => {
-  event.preventDefault()
-  const data = event.dataTransfer?.getData('text')
-  if (data) {
-    const draggedData = JSON.parse(data)
-    const draggedIndex = draggedData.index
-    const elementToMove = elements.value[draggedIndex]
-
-    // 移除原位置的元素
-    elements.value.splice(draggedIndex, 1)
-    // 插入到新位置
-    elements.value.splice(index, 0, elementToMove)
-
-    // 重新分配所有元素的 id
-    elements.value.forEach((element, idx) => {
-      element.id = idx
-    })
-
-    selectedIndex.value = index
-  }
-}
-
-const toggleVisibility = (index: number, event: Event) => {
-  event.stopPropagation()
-  const element = elements.value[index]
-  element.isVisible = element.isVisible === undefined ? false : !element.isVisible
-}
-
-const toggleGuidelines = () => {
-  showGuidelines.value = !showGuidelines.value
-  // 如果关闭辅助线，同时关闭吸附功能
-  if (!showGuidelines.value) {
-    enableSnapping.value = false
-  }
-}
-
-const toggleSnapping = () => {
-  enableSnapping.value = !enableSnapping.value
-  // 如果开启吸附功能，同时开启辅助线
-  if (enableSnapping.value) {
-    showGuidelines.value = true
-  }
-}
-
-const toggleOtherBoundaries = () => {
-  showOtherBoundaries.value = !showOtherBoundaries.value
-  localStorage.setItem('emoji-maker-show-boundaries', showOtherBoundaries.value.toString())
-}
-
-// 监听辅助线状态变化
-watch(showGuidelines, (newValue) => {
-  if (!newValue) {
-    // 如果辅助线被关闭，清除所有辅助线
-    guidelines.value = []
-  }
-  // 保存状态到 localStorage
-  localStorage.setItem(GUIDELINES_STORAGE_KEY, newValue.toString())
-})
-
-// 监听吸附功能状态变化
-watch(enableSnapping, (newValue) => {
-  // 保存状态到 localStorage
-  localStorage.setItem(SNAPPING_STORAGE_KEY, newValue.toString())
-})
-
 const updateOpacity = (event: Event) => {
   if (selectedIndex.value === null) return
   const input = event.target as HTMLInputElement
@@ -1375,6 +1350,8 @@ const isDraggingOver = ref(false)
 
 // 处理拖入事件
 const handleDragEnter = (event: DragEvent) => {
+  // 如果有对话框打开，不显示拖入遮罩
+  if (showExportDialog.value || showConfirmDialog.value) return
   event.preventDefault()
   isDraggingOver.value = true
   if (canvasContainer.value) {
@@ -1495,6 +1472,71 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
   window.removeEventListener('click', hideContextMenu)
   window.removeEventListener('paste', handlePaste)
+})
+
+const dropElement = (event: DragEvent, index: number) => {
+  event.preventDefault()
+  const data = event.dataTransfer?.getData('text')
+  if (data) {
+    const draggedData = JSON.parse(data)
+    const draggedIndex = draggedData.index
+    const elementToMove = elements.value[draggedIndex]
+
+    // 移除原位置的元素
+    elements.value.splice(draggedIndex, 1)
+    // 插入到新位置
+    elements.value.splice(index, 0, elementToMove)
+
+    // 重新分配所有元素的 id
+    elements.value.forEach((element, idx) => {
+      element.id = idx
+    })
+
+    selectedIndex.value = index
+  }
+}
+
+const toggleVisibility = (index: number, event: Event) => {
+  event.stopPropagation()
+  const element = elements.value[index]
+  element.isVisible = element.isVisible === undefined ? false : !element.isVisible
+}
+
+const toggleGuidelines = () => {
+  showGuidelines.value = !showGuidelines.value
+  // 如果关闭辅助线，同时关闭吸附功能
+  if (!showGuidelines.value) {
+    enableSnapping.value = false
+  }
+}
+
+const toggleSnapping = () => {
+  enableSnapping.value = !enableSnapping.value
+  // 如果开启吸附功能，同时开启辅助线
+  if (enableSnapping.value) {
+    showGuidelines.value = true
+  }
+}
+
+const toggleOtherBoundaries = () => {
+  showOtherBoundaries.value = !showOtherBoundaries.value
+  localStorage.setItem('emoji-maker-show-boundaries', showOtherBoundaries.value.toString())
+}
+
+// 监听辅助线状态变化
+watch(showGuidelines, (newValue) => {
+  if (!newValue) {
+    // 如果辅助线被关闭，清除所有辅助线
+    guidelines.value = []
+  }
+  // 保存状态到 localStorage
+  localStorage.setItem(GUIDELINES_STORAGE_KEY, newValue.toString())
+})
+
+// 监听吸附功能状态变化
+watch(enableSnapping, (newValue) => {
+  // 保存状态到 localStorage
+  localStorage.setItem(SNAPPING_STORAGE_KEY, newValue.toString())
 })
 </script>
 
@@ -1767,7 +1809,7 @@ onUnmounted(() => {
   position: relative;
   overflow: hidden;
   transition: border-color 0.3s, border-style 0.3s;
-  z-index: 10000;
+  z-index: 1;
 }
 
 .canvas-container.drag-active {
@@ -1782,7 +1824,7 @@ onUnmounted(() => {
 .guideline {
   position: absolute;
   pointer-events: none;
-  z-index: 1000;
+  z-index: 10;
   display: v-show= 'showGuidelines';
 }
 
@@ -1816,7 +1858,7 @@ onUnmounted(() => {
   border-radius: 8px;
   padding: 15px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 20;
 }
 
 .panel-header {
@@ -2215,7 +2257,7 @@ onUnmounted(() => {
   padding: 4px 0;
   min-width: 120px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 9999;
+  z-index: 30;
 }
 
 .context-menu-item {
@@ -2248,7 +2290,7 @@ onUnmounted(() => {
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 99999;
+  z-index: 100;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -2257,7 +2299,7 @@ onUnmounted(() => {
 
 .drag-hint {
   position: relative;
-  z-index: 100000;
+  z-index: 101;
   background-color: rgba(255, 255, 255, 0.95);
   padding: 24px 32px;
   border-radius: 16px;

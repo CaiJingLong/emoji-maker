@@ -51,7 +51,7 @@ const handleConfirm = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 2000;
+  z-index: 9000;
 }
 
 .confirm-dialog {
@@ -60,6 +60,8 @@ const handleConfirm = () => {
   padding: 20px;
   width: 400px;
   max-width: 90vw;
+  position: relative;
+  z-index: 9001;
 }
 
 .dialog-header {
