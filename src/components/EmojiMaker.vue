@@ -193,17 +193,22 @@
 
       <div class="tools-panel">
         <div class="tools-container">
-          <button @click="handleImageUpload">{{ t('app.upload') }}</button>
-          <button @click="addText">{{ t('app.addText') }}</button>
-          <button @click="exportImage">{{ t('app.download') }}</button>
-          <input
-            type="file"
-            ref="fileInput"
-            @change="onFileSelected"
-            accept="image/*"
-            style="display: none"
-            multiple
-          />
+          <div class="tools-group">
+            <button @click="handleImageUpload">{{ t('app.upload') }}</button>
+            <button @click="addText">{{ t('app.addText') }}</button>
+            <button class="clear-btn" @click="showConfirmDialog = true">{{ t('app.clear') }}</button>
+            <input
+              type="file"
+              ref="fileInput"
+              @change="onFileSelected"
+              accept="image/*"
+              style="display: none"
+              multiple
+            />
+          </div>
+          <div class="tools-group">
+            <button @click="exportImage">{{ t('app.download') }}</button>
+          </div>
         </div>
       </div>
 
@@ -373,6 +378,15 @@
       :container="canvasContainer"
       @close="showExportDialog = false"
     />
+
+    <ConfirmDialog
+      v-if="showConfirmDialog"
+      :title="t('editor.clearConfirmTitle')"
+      :message="t('editor.clearConfirmMessage')"
+      :confirm-text="t('editor.clearConfirm')"
+      @close="showConfirmDialog = false"
+      @confirm="clearAllElements"
+    />
   </div>
 </template>
 
@@ -380,6 +394,7 @@
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useLanguageStore } from '../stores/language'
 import ExportDialog from './ExportDialog.vue'
+import ConfirmDialog from './ConfirmDialog.vue'
 
 const { t } = useLanguageStore()
 
@@ -1203,6 +1218,14 @@ const moveToCenter = () => {
   hideContextMenu()
 }
 
+const showConfirmDialog = ref(false)
+
+const clearAllElements = () => {
+  elements.value = []
+  selectedIndex.value = null
+  addHistory()
+}
+
 onMounted(() => {
   restoreData()
   if (elements.value.length > 0) {
@@ -1661,24 +1684,27 @@ onUnmounted(() => {
   width: min(800px, 90vmin);
   margin: 0 auto;
   display: flex;
-  gap: 10px;
-  justify-content: center;
-  padding: 0 20px;
-  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+
+.tools-group {
+  display: flex;
+  gap: 8px;
 }
 
 .tools-container button {
-  flex: 1;
-  min-width: 120px;
-  max-width: 200px;
-  padding: 12px 20px;
+  flex: 0 1 auto;
+  min-width: 80px;
+  padding: 8px 12px;
   margin: 0;
   background-color: #4caf50;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 13px;
   white-space: nowrap;
   transition: background-color 0.3s;
 }
@@ -1698,6 +1724,14 @@ onUnmounted(() => {
 
 .tools-container button:hover {
   background-color: #45a049;
+}
+
+.tools-container button.clear-btn {
+  background-color: #ff4444;
+}
+
+.tools-container button.clear-btn:hover {
+  background-color: #ff0000;
 }
 
 .control-item .color-picker {

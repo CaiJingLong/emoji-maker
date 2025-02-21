@@ -5,7 +5,7 @@ export default {
     combine: 'Combine Images',
     addText: 'Add Text',
     download: 'Export',
-    clear: 'Clear',
+    clear: 'Clear All',
     language: 'Language',
     layers: 'Layers',
     editAssist: 'Edit Assist',
@@ -57,5 +57,9 @@ export default {
       square: 'Square Border',
       shadow: 'Shadow Border',
     },
+    clearConfirmTitle: 'Confirm Clear',
+    clearConfirmMessage:
+      'Are you sure you want to clear all elements? This action cannot be undone.',
+    clearConfirm: 'Clear',
   },
 }

@@ -57,5 +57,8 @@ export default {
       square: '方形边框',
       shadow: '阴影边框',
     },
+    clearConfirmTitle: '确认清空',
+    clearConfirmMessage: '确定要清空所有元素吗？此操作不可撤销。',
+    clearConfirm: '确认清空',
   },
 }
