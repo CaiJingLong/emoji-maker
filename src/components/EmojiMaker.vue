@@ -726,7 +726,11 @@ const startDrag = (event: MouseEvent | DragEvent, index?: number) => {
     if (element.isEditing) return
 
     isDragging.value = true
-    const rect = (mouseEvent.target as HTMLElement).getBoundingClientRect()
+    // 获取外层的 draggable-element
+    const draggableElement = document.querySelector(`.draggable-element:nth-child(${index + 1})`) as HTMLElement
+    if (!draggableElement) return
+
+    const rect = draggableElement.getBoundingClientRect()
     draggedElement.value = {
       index,
       startX: mouseEvent.clientX - rect.left,
