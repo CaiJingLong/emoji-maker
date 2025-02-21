@@ -5,7 +5,7 @@
         <h3>{{ t('editor.exportSettings') }}</h3>
         <button class="close-btn" @click="$emit('close')">&times;</button>
       </div>
-      
+
       <div class="dialog-content">
         <div class="setting-item">
           <label>{{ t('editor.exportFormat') }}</label>
@@ -23,9 +23,9 @@
               <option value="transparent">{{ t('editor.transparent') }}</option>
               <option value="color">{{ t('editor.solidColor') }}</option>
             </select>
-            <input 
-              v-if="bgType === 'color'" 
-              type="color" 
+            <input
+              v-if="bgType === 'color'"
+              type="color"
               v-model="bgColor"
               class="color-picker"
             >
@@ -128,7 +128,7 @@ const previewExportSize = async () => {
       const ratio = Math.min(thumbSize / width, thumbSize / height)
       thumbnailCanvas.width = width * ratio
       thumbnailCanvas.height = height * ratio
-      
+
       // 绘制缩略图
       ctx.drawImage(canvas, 0, 0, thumbnailCanvas.width, thumbnailCanvas.height)
       thumbnailUrl.value = thumbnailCanvas.toDataURL()
@@ -177,24 +177,41 @@ const handleExport = async () => {
   if (!props.container) return
 
   try {
+    // 临时移除所有辅助性元素的类名
+    const elements = props.container.querySelectorAll('.draggable-element')
+    elements.forEach(el => {
+      el.classList.remove('show-boundary', 'selected')
+    })
+
+    // 隐藏所有辅助线
+    const guidelines = props.container.querySelectorAll('.guideline')
+    guidelines.forEach(el => {
+      ;(el as HTMLElement).style.display = 'none'
+    })
+
+    // 导出图片
     const canvas = await html2canvas(props.container, {
       backgroundColor: bgType.value === 'transparent' ? null : bgColor.value,
       scale: Number(quality.value)
     })
 
+    // 恢复辅助性元素
+    elements.forEach(el => {
+      if (el.getAttribute('data-selected') === 'true') {
+        el.classList.add('selected')
+      }
+    })
+    guidelines.forEach(el => {
+      ;(el as HTMLElement).style.display = ''
+    })
+
+    // 处理导出
+    const dataUrl = canvas.toDataURL(format.value, quality.value)
     const link = document.createElement('a')
-    link.download = `emoji.${format.value}`
-    
-    // 根据不同格式导出
-    if (format.value === 'png') {
-      link.href = canvas.toDataURL('image/png')
-    } else if (format.value === 'jpeg') {
-      link.href = canvas.toDataURL('image/jpeg', 0.9)
-    } else if (format.value === 'webp') {
-      link.href = canvas.toDataURL('image/webp', 0.9)
-    }
-    
+    link.download = `emoji-${Date.now()}.${format.value.split('/')[1]}`
+    link.href = dataUrl
     link.click()
+
     emit('close')
   } catch (error) {
     console.error('导出失败:', error)
@@ -366,4 +383,4 @@ onMounted(() => {
 .export-btn:hover {
   background: #45a049;
 }
-</style> 
+</style>

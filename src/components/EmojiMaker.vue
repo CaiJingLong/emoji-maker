@@ -58,13 +58,13 @@
     <div class="main-content">
       <div class="canvas-area">
         <div class="canvas-container" ref="canvasContainer" @dragover.prevent>
-          <!-- 添加辅助线 -->
           <template v-for="(guideline, index) in guidelines" :key="index">
             <div
               class="guideline"
               :class="guideline.type"
               :style="{
-                [guideline.type === 'vertical' ? 'left' : 'top']: `${guideline.position}px`
+                [guideline.type === 'vertical' ? 'left' : 'top']: `${guideline.position}px`,
+                borderColor: guideline.color
               }"
             ></div>
           </template>
@@ -73,7 +73,10 @@
             :key="index"
             v-show="element.isVisible !== false"
             class="draggable-element"
-            :class="{ 'selected': selectedIndex === index }"
+            :class="{
+              'selected': selectedIndex === index,
+              'show-boundary': isDragging
+            }"
             :style="{
               left: element.style.left,
               top: element.style.top,
@@ -83,7 +86,8 @@
               color: element.style.color,
               width: element.style.width,
               height: element.style.height,
-              rotate: element.style.rotate
+              rotate: element.style.rotate,
+              '--element-color': ELEMENT_COLORS[element.id % ELEMENT_COLORS.length]
             }"
             @mousedown="startDrag($event, index)"
             @click.stop="selectElement(index)"
@@ -229,6 +233,7 @@ const { t } = useLanguageStore()
 interface Element {
   type: 'image' | 'text'
   content: string
+  id: number
   style: {
     left: string
     top: string
@@ -249,6 +254,8 @@ interface Element {
 interface GuidelineInfo {
   position: number
   type: 'horizontal' | 'vertical'
+  color: string
+  source: 'container' | number
 }
 
 // 添加吸附状态接口
@@ -282,6 +289,21 @@ const lastSavedState = ref<string>('') // 用于比较状态是否真的改变
 const guidelines = ref<GuidelineInfo[]>([])
 const snapState = ref<SnapInfo[]>([])
 
+// 添加颜色常量
+const CONTAINER_GUIDELINE_COLOR = '#FF6B6B' // 容器辅助线颜色
+const ELEMENT_COLORS = [
+  '#4ECDC4', // 青色
+  '#45B7D1', // 蓝色
+  '#96CEB4', // 绿色
+  '#FFEEAD', // 黄色
+  '#D4A5A5', // 粉色
+  '#9B59B6', // 紫色
+  '#3498DB', // 深蓝色
+  '#2ECC71', // 深绿色
+  '#F1C40F', // 金色
+  '#E74C3C'  // 红色
+]
+
 // 计算元素的边界框
 const getElementBounds = (element: Element, index: number): DOMRect | null => {
   const el = document.querySelector(`.draggable-element:nth-child(${index + 1})`) as HTMLElement
@@ -290,11 +312,13 @@ const getElementBounds = (element: Element, index: number): DOMRect | null => {
 
   const elRect = el.getBoundingClientRect()
   const containerRect = container.getBoundingClientRect()
+  const computedStyle = window.getComputedStyle(el)
+  const borderWidth = parseInt(computedStyle.borderWidth) || 0
 
-  // 计算相对于容器的位置
+  // 计算相对于容器的位置，修正边框宽度的补偿方向
   return new DOMRect(
-    elRect.left - containerRect.left,
-    elRect.top - containerRect.top,
+    elRect.left - containerRect.left - borderWidth,
+    elRect.top - containerRect.top - borderWidth,
     elRect.width,
     elRect.height
   )
@@ -324,7 +348,9 @@ const checkAlignment = (currentIndex: number) => {
   if (Math.abs(elementCenterX - containerCenterX) < SNAP_THRESHOLD) {
     guidelines.value.push({
       position: containerCenterX,
-      type: 'vertical'
+      type: 'vertical',
+      color: CONTAINER_GUIDELINE_COLOR,
+      source: 'container'
     })
     snapState.value.push({
       isSnapped: true,
@@ -337,7 +363,9 @@ const checkAlignment = (currentIndex: number) => {
   if (Math.abs(elementCenterY - containerCenterY) < SNAP_THRESHOLD) {
     guidelines.value.push({
       position: containerCenterY,
-      type: 'horizontal'
+      type: 'horizontal',
+      color: CONTAINER_GUIDELINE_COLOR,
+      source: 'container'
     })
     snapState.value.push({
       isSnapped: true,
@@ -352,6 +380,8 @@ const checkAlignment = (currentIndex: number) => {
     const bounds = getElementBounds(element, index)
     if (!bounds) return
 
+    const elementColor = ELEMENT_COLORS[element.id % ELEMENT_COLORS.length]
+
     // 检查垂直对齐
     const verticalAlignments = [
       { current: currentBounds.left, target: bounds.left }, // 左对齐
@@ -359,7 +389,6 @@ const checkAlignment = (currentIndex: number) => {
       { current: currentBounds.left + currentBounds.width / 2, target: bounds.left + bounds.width / 2 }, // 中心对齐
       { current: currentBounds.right, target: bounds.left }, // 右边缘对左边缘
       { current: currentBounds.left, target: bounds.right }, // 左边缘对右边缘
-      // 添加等间距检测
       { current: currentBounds.left, target: bounds.right + SNAP_THRESHOLD }, // 水平等间距
       { current: currentBounds.right, target: bounds.left - SNAP_THRESHOLD }  // 水平等间距
     ]
@@ -368,7 +397,9 @@ const checkAlignment = (currentIndex: number) => {
       if (Math.abs(current - target) < SNAP_THRESHOLD) {
         guidelines.value.push({
           position: target,
-          type: 'vertical'
+          type: 'vertical',
+          color: elementColor,
+          source: element.id
         })
         snapState.value.push({
           isSnapped: true,
@@ -385,7 +416,6 @@ const checkAlignment = (currentIndex: number) => {
       { current: currentBounds.top + currentBounds.height / 2, target: bounds.top + bounds.height / 2 }, // 中心对齐
       { current: currentBounds.bottom, target: bounds.top }, // 底边缘对顶边缘
       { current: currentBounds.top, target: bounds.bottom }, // 顶边缘对底边缘
-      // 添加等间距检测
       { current: currentBounds.top, target: bounds.bottom + SNAP_THRESHOLD }, // 垂直等间距
       { current: currentBounds.bottom, target: bounds.top - SNAP_THRESHOLD }  // 垂直等间距
     ]
@@ -394,7 +424,9 @@ const checkAlignment = (currentIndex: number) => {
       if (Math.abs(current - target) < SNAP_THRESHOLD) {
         guidelines.value.push({
           position: target,
-          type: 'horizontal'
+          type: 'horizontal',
+          color: elementColor,
+          source: element.id
         })
         snapState.value.push({
           isSnapped: true,
@@ -489,9 +521,13 @@ const onFileSelected = (event: Event) => {
       const reader = new FileReader()
       reader.onload = (e) => {
         if (e.target?.result) {
+          const newId = elements.value.length > 0
+            ? Math.max(...elements.value.map(el => el.id)) + 1
+            : 0
           elements.value.push({
             type: 'image',
             content: e.target.result as string,
+            id: newId,
             style: {
               left: '50%',
               top: '50%',
@@ -510,9 +546,13 @@ const onFileSelected = (event: Event) => {
 }
 
 const addText = () => {
+  const newId = elements.value.length > 0
+    ? Math.max(...elements.value.map(el => el.id)) + 1
+    : 0
   elements.value.push({
     type: 'text',
     content: t('editor.textPlaceholder'),
+    id: newId,
     style: {
       left: '50%',
       top: '50%',
@@ -547,7 +587,7 @@ const startDrag = (event: MouseEvent | DragEvent, index?: number) => {
     const element = elements.value[index]
     if (element.isEditing) return
 
-    isDragging.value = true // 开始拖动
+    isDragging.value = true
     const rect = (mouseEvent.target as HTMLElement).getBoundingClientRect()
     draggedElement.value = {
       index,
@@ -558,7 +598,7 @@ const startDrag = (event: MouseEvent | DragEvent, index?: number) => {
 }
 
 const onDrag = (event: MouseEvent) => {
-  if (!draggedElement.value) return
+  if (!draggedElement.value || !isDragging.value) return
 
   const containerRect = canvasContainer.value?.getBoundingClientRect()
   if (!containerRect) return
@@ -599,7 +639,6 @@ const onDrag = (event: MouseEvent) => {
     if (diff <= SNAP_THRESHOLD) {
       finalX = snapX
     } else if (diff <= SNAP_THRESHOLD * 2) {
-      // 使用二次函数进行平滑插值，使过渡更加自然
       const t = Math.pow((diff - SNAP_THRESHOLD) / SNAP_THRESHOLD, 2)
       finalX = snapX + (targetX - snapX) * t
     }
@@ -613,7 +652,6 @@ const onDrag = (event: MouseEvent) => {
     if (diff <= SNAP_THRESHOLD) {
       finalY = snapY
     } else if (diff <= SNAP_THRESHOLD * 2) {
-      // 使用二次函数进行平滑插值，使过渡更加自然
       const t = Math.pow((diff - SNAP_THRESHOLD) / SNAP_THRESHOLD, 2)
       finalY = snapY + (targetY - snapY) * t
     }
@@ -628,7 +666,7 @@ const onDrag = (event: MouseEvent) => {
 const stopDrag = () => {
   if (isDragging.value) {
     isDragging.value = false
-    guidelines.value = [] // 清除辅助线
+    guidelines.value = []
     addHistory()
   }
   draggedElement.value = null
@@ -915,7 +953,7 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-/* 添加辅助线样式 */
+/* 修改辅助线样式 */
 .guideline {
   position: absolute;
   pointer-events: none;
@@ -924,15 +962,15 @@ onUnmounted(() => {
 
 .guideline.horizontal {
   width: 100%;
-  height: 1px;
-  background-color: #4CAF50;
+  height: 0;
+  border-top: 1px dashed; /* 改为虚线 */
   left: 0;
 }
 
 .guideline.vertical {
-  width: 1px;
+  width: 0;
   height: 100%;
-  background-color: #4CAF50;
+  border-left: 1px dashed; /* 改为虚线 */
   top: 0;
 }
 
@@ -1008,12 +1046,18 @@ onUnmounted(() => {
   position: absolute;
   cursor: move;
   user-select: none;
+  box-sizing: border-box;
   border: 2px solid transparent;
   transform-origin: center center;
+  transition: border-color 0.2s;
+}
+
+.draggable-element.show-boundary {
+  border-color: var(--element-color);
 }
 
 .draggable-element.selected {
-  border-color: #4CAF50;
+  border-color: var(--element-color);
 }
 
 .draggable-element img {
