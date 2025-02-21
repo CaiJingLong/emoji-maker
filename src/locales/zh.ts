@@ -8,6 +8,7 @@ export default {
     clear: '清空',
     language: '语言',
     layers: '图层管理',
+    editAssist: '编辑辅助',
     showGuidelines: '显示辅助线',
     hideGuidelines: '隐藏辅助线',
     enableSnapping: '开启吸附',

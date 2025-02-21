@@ -8,6 +8,7 @@ export default {
     clear: 'Clear',
     language: 'Language',
     layers: 'Layers',
+    editAssist: 'Edit Assist',
     showGuidelines: 'Show Guidelines',
     hideGuidelines: 'Hide Guidelines',
     enableSnapping: 'Enable Snapping',

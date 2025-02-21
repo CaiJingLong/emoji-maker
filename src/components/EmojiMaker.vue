@@ -1,106 +1,122 @@
 <template>
   <div class="emoji-maker">
-    <div class="layers-panel">
-      <h3>{{ t('app.layers') }}</h3>
-      <div class="layer-settings">
-        <div class="setting-item" @click="toggleGuidelines">
-          <span class="setting-checkbox" :class="{ active: showGuidelines }"></span>
-          <span class="setting-label">{{
-            showGuidelines ? t('app.hideGuidelines') : t('app.showGuidelines')
-          }}</span>
+    <div class="side-panel">
+      <div class="accordion-item">
+        <div class="accordion-header" @click="toggleLayers">
+          <h3>{{ t('app.layers') }}</h3>
+          <span class="accordion-icon" :class="{ 'is-expanded': isLayersExpanded }">▼</span>
         </div>
-        <div class="setting-item" @click="toggleSnapping">
-          <span
-            class="setting-checkbox"
-            :class="{
-              active: enableSnapping,
-            }"
-          ></span>
-          <span class="setting-label">{{
-            enableSnapping ? t('app.disableSnapping') : t('app.enableSnapping')
-          }}</span>
+        <div class="accordion-content" :class="{ 'is-expanded': isLayersExpanded }">
+          <ul class="layer-list">
+            <li
+              v-for="(element, index) in elements"
+              :key="index"
+              :data-index="index"
+              class="layer-item"
+              :class="{
+                selected: selectedIndex === index,
+                hidden: element.isVisible === false,
+              }"
+              @click.stop="selectElement(index)"
+              draggable="true"
+              @dragstart="startDrag"
+              @dragover.prevent
+              @drop="dropElement($event, index)"
+              @dragend="stopDrag"
+            >
+              <div class="layer-item-content">
+                <span class="layer-item-icon">
+                  <template v-if="element.type === 'text'">
+                    <span class="text-icon">T</span>
+                  </template>
+                  <template v-else>
+                    <span class="image-icon">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                      </svg>
+                    </span>
+                  </template>
+                </span>
+                <span class="layer-item-text">
+                  {{
+                    element.type === 'text'
+                      ? element.content || t('editor.textPlaceholder')
+                      : t('editor.image')
+                  }}
+                </span>
+              </div>
+              <span class="layer-item-visibility" @click="toggleVisibility(index, $event)">
+                <svg
+                  v-if="element.isVisible !== false"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg
+                  v-else
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+                  ></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </span>
+            </li>
+          </ul>
         </div>
       </div>
-      <ul class="layer-list">
-        <li
-          v-for="(element, index) in elements"
-          :key="index"
-          :data-index="index"
-          class="layer-item"
-          :class="{
-            selected: selectedIndex === index,
-            hidden: element.isVisible === false,
-          }"
-          @click.stop="selectElement(index)"
-          draggable="true"
-          @dragstart="startDrag"
-          @dragover.prevent
-          @drop="dropElement($event, index)"
-          @dragend="stopDrag"
-        >
-          <div class="layer-item-content">
-            <span class="layer-item-icon">
-              <template v-if="element.type === 'text'">
-                <span class="text-icon">T</span>
-              </template>
-              <template v-else>
-                <span class="image-icon">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                    <polyline points="21 15 16 10 5 21"></polyline>
-                  </svg>
-                </span>
-              </template>
-            </span>
-            <span class="layer-item-text">
-              {{
-                element.type === 'text'
-                  ? element.content || t('editor.textPlaceholder')
-                  : t('editor.image')
-              }}
-            </span>
+
+      <div class="accordion-item">
+        <div class="accordion-header" @click="toggleEditAssist">
+          <h3>{{ t('app.editAssist') }}</h3>
+          <span class="accordion-icon" :class="{ 'is-expanded': isEditAssistExpanded }">▼</span>
+        </div>
+        <div class="accordion-content" :class="{ 'is-expanded': isEditAssistExpanded }">
+          <div class="assist-settings">
+            <div class="setting-item" @click="toggleGuidelines">
+              <span class="setting-checkbox" :class="{ active: showGuidelines }"></span>
+              <span class="setting-label">{{
+                showGuidelines ? t('app.hideGuidelines') : t('app.showGuidelines')
+              }}</span>
+            </div>
+            <div class="setting-item" @click="toggleSnapping">
+              <span
+                class="setting-checkbox"
+                :class="{
+                  active: enableSnapping,
+                }"
+              ></span>
+              <span class="setting-label">{{
+                enableSnapping ? t('app.disableSnapping') : t('app.enableSnapping')
+              }}</span>
+            </div>
           </div>
-          <span class="layer-item-visibility" @click="toggleVisibility(index, $event)">
-            <svg
-              v-if="element.isVisible !== false"
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-            <svg
-              v-else
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
-              ></path>
-              <line x1="1" y1="1" x2="23" y2="23"></line>
-            </svg>
-          </span>
-        </li>
-      </ul>
+        </div>
+      </div>
     </div>
 
     <div class="main-content">
@@ -381,6 +397,18 @@ const ELEMENT_COLORS = [
   '#FF69B4', // 粉红色
   '#4169E1', // 皇家蓝
 ]
+
+// 添加手风琴状态控制
+const isLayersExpanded = ref(true)
+const isEditAssistExpanded = ref(true)
+
+const toggleLayers = () => {
+  isLayersExpanded.value = !isLayersExpanded.value
+}
+
+const toggleEditAssist = () => {
+  isEditAssistExpanded.value = !isEditAssistExpanded.value
+}
 
 // 计算元素的边界框
 const getElementBounds = (element: Element, index: number): DOMRect | null => {
@@ -1042,124 +1070,127 @@ onUnmounted(() => {
   position: relative;
 }
 
-.layers-panel {
-  width: 250px;
-  background: white;
-  padding: 15px;
-  border-right: 1px solid #eee;
-  display: flex;
-  flex-direction: column;
+.side-panel {
+  width: 280px;
+  background-color: #f5f5f5;
+  border-right: 1px solid #e0e0e0;
   overflow-y: auto;
+  padding: 16px;
 }
 
-.layers-panel h3 {
-  margin: 0 0 15px 0;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #eee;
-  font-size: 16px;
-  color: #333;
+.accordion-item {
+  margin-bottom: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: white;
 }
 
-.layer-settings {
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #eee;
-}
-
-.setting-item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
+.accordion-header {
+  padding: 12px 16px;
+  background-color: #ffffff;
   cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   user-select: none;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: #f8f8f8;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+  }
 }
 
-.setting-item:last-child {
-  margin-bottom: 0;
+.accordion-icon {
+  font-size: 12px;
+  color: #666;
+  transition: transform 0.2s ease;
+
+  &.is-expanded {
+    transform: rotate(180deg);
+  }
 }
 
-.setting-checkbox {
-  width: 18px;
-  height: 18px;
-  border: 2px solid #666;
-  border-radius: 4px;
-  margin-right: 8px;
-  position: relative;
-  transition: all 0.2s;
-}
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
 
-.setting-checkbox.active {
-  background-color: #4caf50;
-  border-color: #4caf50;
-}
-
-.setting-checkbox.active::after {
-  content: '';
-  position: absolute;
-  left: 5px;
-  top: 2px;
-  width: 5px;
-  height: 9px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-.setting-label {
-  font-size: 14px;
-  color: #333;
+  &.is-expanded {
+    max-height: 500px;
+    transition: max-height 0.5s ease-in;
+  }
 }
 
 .layer-list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 8px;
 }
 
 .layer-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 8px;
   margin-bottom: 4px;
-  background: #f9f9f9;
-  border: 1px solid #eee;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
-  cursor: move;
+  cursor: pointer;
   user-select: none;
-  transition: all 0.2s;
-}
+  transition: all 0.2s ease;
 
-.layer-item.selected {
-  background: #e8f5e9;
-  border-color: #4caf50;
-}
+  &:hover {
+    background-color: #f8f8f8;
+  }
 
-.layer-item:hover {
-  background: #f0f0f0;
-}
+  &.selected {
+    background-color: #e3f2fd;
+    border-color: #2196f3;
+  }
 
-.layer-item.dragging {
-  opacity: 0.5;
-}
+  &.hidden {
+    opacity: 0.5;
+  }
 
-.layer-item.hidden {
-  opacity: 0.5;
+  &.dragging {
+    opacity: 0.5;
+    background-color: #f0f0f0;
+  }
 }
 
 .layer-item-content {
-  flex: 1;
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
 }
 
 .layer-item-icon {
-  width: 20px;
-  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
+  width: 24px;
+  height: 24px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+
+  .text-icon {
+    font-weight: bold;
+    color: #666;
+  }
+
+  .image-icon {
+    color: #666;
+  }
 }
 
 .layer-item-text {
@@ -1168,20 +1199,69 @@ onUnmounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 160px;
 }
 
 .layer-item-visibility {
-  width: 24px;
-  height: 24px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  padding: 4px;
   color: #666;
-  margin-right: 8px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #333;
+  }
 }
 
-.layer-item-visibility:hover {
+.assist-settings {
+  padding: 8px;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+  border-radius: 4px;
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+}
+
+.setting-checkbox {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #666;
+  border-radius: 4px;
+  position: relative;
+  transition: all 0.2s ease;
+
+  &.active {
+    background-color: #2196f3;
+    border-color: #2196f3;
+
+    &:after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: 2px;
+      width: 5px;
+      height: 10px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+  }
+}
+
+.setting-label {
+  font-size: 14px;
   color: #333;
 }
 
