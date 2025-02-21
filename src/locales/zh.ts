@@ -25,6 +25,7 @@ export default {
     borderStyle: '边框样式',
     rotation: '旋转',
     size: '大小',
+    opacity: '透明度',
     exportSettings: '导出设置',
     exportFormat: '导出格式',
     withTransparency: '支持透明',

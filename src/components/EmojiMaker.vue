@@ -151,6 +151,7 @@
               width: element.style.width,
               height: element.style.height,
               rotate: element.style.rotate,
+              opacity: element.style.opacity || '1',
               '--element-color': ELEMENT_COLORS[element.id % ELEMENT_COLORS.length],
             }"
             @mousedown="startDrag($event, index)"
@@ -273,6 +274,17 @@
               />
               <span class="size-value">{{ selectedElement.style.rotate || '0' }}°</span>
             </div>
+            <div class="control-item">
+              <label>{{ t('editor.opacity') }}</label>
+              <input
+                type="range"
+                :value="Math.round(parseFloat(selectedElement.style.opacity || '1') * 100)"
+                min="0"
+                max="100"
+                @input="updateOpacity($event)"
+              />
+              <span class="size-value">{{ Math.round(parseFloat(selectedElement.style.opacity || '1') * 100) }}%</span>
+            </div>
           </template>
           <template v-else>
             <div class="control-item">
@@ -296,6 +308,17 @@
                 @input="updateRotation($event)"
               />
               <span class="size-value">{{ selectedElement.style.rotate || '0' }}°</span>
+            </div>
+            <div class="control-item">
+              <label>{{ t('editor.opacity') }}</label>
+              <input
+                type="range"
+                :value="Math.round(parseFloat(selectedElement.style.opacity || '1') * 100)"
+                min="0"
+                max="100"
+                @input="updateOpacity($event)"
+              />
+              <span class="size-value">{{ Math.round(parseFloat(selectedElement.style.opacity || '1') * 100) }}%</span>
             </div>
           </template>
         </div>
@@ -332,6 +355,7 @@ interface Element {
     height?: string
     rotate?: string
     borderStyle?: string
+    opacity?: string
   }
   isEditing?: boolean
   isVisible?: boolean
@@ -1046,6 +1070,13 @@ watch(enableSnapping, (newValue) => {
   // 保存状态到 localStorage
   localStorage.setItem(SNAPPING_STORAGE_KEY, newValue.toString())
 })
+
+const updateOpacity = (event: Event) => {
+  if (selectedIndex.value === null) return
+  const input = event.target as HTMLInputElement
+  const opacity = (parseFloat(input.value) / 100).toString()
+  elements.value[selectedIndex.value].style.opacity = opacity
+}
 
 onMounted(() => {
   restoreData()

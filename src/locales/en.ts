@@ -25,6 +25,7 @@ export default {
     borderStyle: 'Border Style',
     rotation: 'Rotation',
     size: 'Size',
+    opacity: 'Opacity',
     exportSettings: 'Export Settings',
     exportFormat: 'Export Format',
     withTransparency: 'With Transparency',
