@@ -58,6 +58,16 @@
     <div class="main-content">
       <div class="canvas-area">
         <div class="canvas-container" ref="canvasContainer" @dragover.prevent>
+          <!-- 添加辅助线 -->
+          <template v-for="(guideline, index) in guidelines" :key="index">
+            <div
+              class="guideline"
+              :class="guideline.type"
+              :style="{
+                [guideline.type === 'vertical' ? 'left' : 'top']: `${guideline.position}px`
+              }"
+            ></div>
+          </template>
           <div
             v-for="(element, index) in elements"
             :key="index"
@@ -235,7 +245,21 @@ interface Element {
   isVisible?: boolean
 }
 
+// 对齐辅助线接口
+interface GuidelineInfo {
+  position: number
+  type: 'horizontal' | 'vertical'
+}
+
+// 添加吸附状态接口
+interface SnapInfo {
+  isSnapped: boolean
+  position: number
+  type: 'horizontal' | 'vertical'
+}
+
 const STORAGE_KEY = 'emoji-maker-elements'
+const SNAP_THRESHOLD = 10 // 吸附阈值（像素）
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const canvasContainer = ref<HTMLDivElement | null>(null)
@@ -254,6 +278,135 @@ const history = ref<Element[][]>([]) // 历史记录栈
 const currentHistoryIndex = ref(-1) // 当前历史记录索引
 const isHistoryAction = ref(false) // 是否是历史记录操作（用于防止历史记录操作触发 watch）
 const lastSavedState = ref<string>('') // 用于比较状态是否真的改变
+
+const guidelines = ref<GuidelineInfo[]>([])
+const snapState = ref<SnapInfo[]>([])
+
+// 计算元素的边界框
+const getElementBounds = (element: Element, index: number): DOMRect | null => {
+  const el = document.querySelector(`.draggable-element:nth-child(${index + 1})`) as HTMLElement
+  const container = canvasContainer.value
+  if (!el || !container) return null
+
+  const elRect = el.getBoundingClientRect()
+  const containerRect = container.getBoundingClientRect()
+
+  // 计算相对于容器的位置
+  return new DOMRect(
+    elRect.left - containerRect.left,
+    elRect.top - containerRect.top,
+    elRect.width,
+    elRect.height
+  )
+}
+
+// 检查并生成对齐辅助线
+const checkAlignment = (currentIndex: number) => {
+  if (!draggedElement.value) return []
+
+  guidelines.value = []
+  snapState.value = []
+  const currentElement = elements.value[currentIndex]
+  const currentBounds = getElementBounds(currentElement, currentIndex)
+  const container = canvasContainer.value
+  if (!currentBounds || !container) return []
+
+  const containerWidth = container.offsetWidth
+  const containerHeight = container.offsetHeight
+  const containerCenterX = containerWidth / 2
+  const containerCenterY = containerHeight / 2
+
+  // 检查与容器中心的对齐
+  const elementCenterX = currentBounds.left + currentBounds.width / 2
+  const elementCenterY = currentBounds.top + currentBounds.height / 2
+
+  // 检查水平中心对齐
+  if (Math.abs(elementCenterX - containerCenterX) < SNAP_THRESHOLD) {
+    guidelines.value.push({
+      position: containerCenterX,
+      type: 'vertical'
+    })
+    snapState.value.push({
+      isSnapped: true,
+      position: containerCenterX - currentBounds.width / 2,
+      type: 'vertical'
+    })
+  }
+
+  // 检查垂直中心对齐
+  if (Math.abs(elementCenterY - containerCenterY) < SNAP_THRESHOLD) {
+    guidelines.value.push({
+      position: containerCenterY,
+      type: 'horizontal'
+    })
+    snapState.value.push({
+      isSnapped: true,
+      position: containerCenterY - currentBounds.height / 2,
+      type: 'horizontal'
+    })
+  }
+
+  elements.value.forEach((element, index) => {
+    if (index === currentIndex || element.isVisible === false) return
+
+    const bounds = getElementBounds(element, index)
+    if (!bounds) return
+
+    // 检查垂直对齐
+    const verticalAlignments = [
+      { current: currentBounds.left, target: bounds.left }, // 左对齐
+      { current: currentBounds.right, target: bounds.right }, // 右对齐
+      { current: currentBounds.left + currentBounds.width / 2, target: bounds.left + bounds.width / 2 }, // 中心对齐
+      { current: currentBounds.right, target: bounds.left }, // 右边缘对左边缘
+      { current: currentBounds.left, target: bounds.right }, // 左边缘对右边缘
+      // 添加等间距检测
+      { current: currentBounds.left, target: bounds.right + SNAP_THRESHOLD }, // 水平等间距
+      { current: currentBounds.right, target: bounds.left - SNAP_THRESHOLD }  // 水平等间距
+    ]
+
+    verticalAlignments.forEach(({current, target}) => {
+      if (Math.abs(current - target) < SNAP_THRESHOLD) {
+        guidelines.value.push({
+          position: target,
+          type: 'vertical'
+        })
+        snapState.value.push({
+          isSnapped: true,
+          position: target - (current - parseInt(currentElement.style.left)),
+          type: 'vertical'
+        })
+      }
+    })
+
+    // 检查水平对齐
+    const horizontalAlignments = [
+      { current: currentBounds.top, target: bounds.top }, // 顶部对齐
+      { current: currentBounds.bottom, target: bounds.bottom }, // 底部对齐
+      { current: currentBounds.top + currentBounds.height / 2, target: bounds.top + bounds.height / 2 }, // 中心对齐
+      { current: currentBounds.bottom, target: bounds.top }, // 底边缘对顶边缘
+      { current: currentBounds.top, target: bounds.bottom }, // 顶边缘对底边缘
+      // 添加等间距检测
+      { current: currentBounds.top, target: bounds.bottom + SNAP_THRESHOLD }, // 垂直等间距
+      { current: currentBounds.bottom, target: bounds.top - SNAP_THRESHOLD }  // 垂直等间距
+    ]
+
+    horizontalAlignments.forEach(({current, target}) => {
+      if (Math.abs(current - target) < SNAP_THRESHOLD) {
+        guidelines.value.push({
+          position: target,
+          type: 'horizontal'
+        })
+        snapState.value.push({
+          isSnapped: true,
+          position: target - (current - parseInt(currentElement.style.top)),
+          type: 'horizontal'
+        })
+      }
+    })
+  })
+
+  return snapState.value
+}
 
 // 添加历史记录
 const addHistory = () => {
@@ -413,18 +566,70 @@ const onDrag = (event: MouseEvent) => {
   const index = draggedElement.value.index
   const element = elements.value[index]
 
-  const x = event.clientX - containerRect.left - draggedElement.value.startX
-  const y = event.clientY - containerRect.top - draggedElement.value.startY
+  // 计算鼠标相对于容器的位置
+  const mouseX = event.clientX - containerRect.left
+  const mouseY = event.clientY - containerRect.top
 
-  element.style.left = `${x}px`
-  element.style.top = `${y}px`
+  // 计算元素的目标位置（考虑鼠标在元素内的偏移）
+  const targetX = mouseX - draggedElement.value.startX
+  const targetY = mouseY - draggedElement.value.startY
+
+  // 先临时更新元素位置以获取准确的边界框
+  const prevLeft = element.style.left
+  const prevTop = element.style.top
+  element.style.left = `${targetX}px`
+  element.style.top = `${targetY}px`
+
+  // 检查对齐和吸附
+  const snaps = checkAlignment(index) || []
+
+  // 恢复原位置
+  element.style.left = prevLeft
+  element.style.top = prevTop
+
+  // 计算最终位置（考虑吸附效果）
+  let finalX = targetX
+  let finalY = targetY
+
+  // 处理垂直方向的吸附
+  const verticalSnap = snaps.find(s => s.type === 'vertical')
+  if (verticalSnap?.isSnapped) {
+    const snapX = verticalSnap.position
+    const diff = Math.abs(targetX - snapX)
+    if (diff <= SNAP_THRESHOLD) {
+      finalX = snapX
+    } else if (diff <= SNAP_THRESHOLD * 2) {
+      // 使用二次函数进行平滑插值，使过渡更加自然
+      const t = Math.pow((diff - SNAP_THRESHOLD) / SNAP_THRESHOLD, 2)
+      finalX = snapX + (targetX - snapX) * t
+    }
+  }
+
+  // 处理水平方向的吸附
+  const horizontalSnap = snaps.find(s => s.type === 'horizontal')
+  if (horizontalSnap?.isSnapped) {
+    const snapY = horizontalSnap.position
+    const diff = Math.abs(targetY - snapY)
+    if (diff <= SNAP_THRESHOLD) {
+      finalY = snapY
+    } else if (diff <= SNAP_THRESHOLD * 2) {
+      // 使用二次函数进行平滑插值，使过渡更加自然
+      const t = Math.pow((diff - SNAP_THRESHOLD) / SNAP_THRESHOLD, 2)
+      finalY = snapY + (targetY - snapY) * t
+    }
+  }
+
+  // 一次性应用最终位置
+  element.style.left = `${finalX}px`
+  element.style.top = `${finalY}px`
   element.style.transform = 'none'
 }
 
 const stopDrag = () => {
   if (isDragging.value) {
-    isDragging.value = false // 结束拖动
-    addHistory() // 在拖动结束时添加历史记录
+    isDragging.value = false
+    guidelines.value = [] // 清除辅助线
+    addHistory()
   }
   draggedElement.value = null
 }
@@ -708,6 +913,27 @@ onUnmounted(() => {
   border-radius: 8px;
   position: relative;
   overflow: hidden;
+}
+
+/* 添加辅助线样式 */
+.guideline {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.guideline.horizontal {
+  width: 100%;
+  height: 1px;
+  background-color: #4CAF50;
+  left: 0;
+}
+
+.guideline.vertical {
+  width: 1px;
+  height: 100%;
+  background-color: #4CAF50;
+  top: 0;
 }
 
 @media (max-height: 1000px) {
