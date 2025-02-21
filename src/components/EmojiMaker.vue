@@ -1,5 +1,16 @@
 <template>
-  <div class="emoji-maker">
+  <div class="emoji-maker" @dragenter.prevent="handleDragEnter" @dragleave.prevent="handleDragLeave" @dragover.prevent @drop.prevent="handleExternalDrop">
+    <!-- 添加遮罩层 -->
+    <div v-if="isDraggingOver" class="drag-overlay">
+      <div class="drag-hint">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span>{{ t('app.dropHint') }}</span>
+      </div>
+    </div>
     <div class="side-panel">
       <div class="accordion-item">
         <div class="accordion-header" @click="toggleLayers">
@@ -133,7 +144,7 @@
 
     <div class="main-content">
       <div class="canvas-area">
-        <div class="canvas-container" ref="canvasContainer" @dragover.prevent>
+        <div class="canvas-container" ref="canvasContainer" @dragover.prevent="handleDragOver" @drop.prevent="handleExternalDrop">
           <template v-for="(guideline, index) in guidelines" :key="index">
             <div
               class="guideline"
@@ -1115,16 +1126,18 @@ const handleKeyDown = (event: KeyboardEvent) => {
 // 添加一个新的辅助函数来处理元素添加
 const addElementToCanvas = (elementData: { type: 'text' | 'image', content: string, style: Record<string, string> }) => {
   const newId = elements.value.length > 0 ? Math.max(...elements.value.map((el) => el.id)) + 1 : 0
-  const containerWidth = canvasContainer.value?.offsetWidth || 400
-  const containerHeight = canvasContainer.value?.offsetHeight || 400
+
+  // 从样式中获取位置信息
+  const left = elementData.style.left || '50%'
+  const top = elementData.style.top || '50%'
 
   elements.value.push({
     type: elementData.type,
     content: elementData.content,
     id: newId,
     style: {
-      left: '50%',
-      top: '50%',
+      left,
+      top,
       position: 'absolute',
       transform: 'translate(-50%, -50%)',
       rotate: '0deg',
@@ -1133,8 +1146,8 @@ const addElementToCanvas = (elementData: { type: 'text' | 'image', content: stri
     },
     isEditing: false,
     initialCenter: {
-      x: Math.round(containerWidth / 2),
-      y: Math.round(containerHeight / 2),
+      x: parseInt(left),
+      y: parseInt(top)
     },
   })
 }
@@ -1344,6 +1357,106 @@ const clearAllElements = () => {
   elements.value = []
   selectedIndex.value = null
   addHistory()
+}
+
+// 处理外部拖放的悬停效果
+const handleDragOver = (event: DragEvent) => {
+  event.preventDefault()
+  // 添加拖放提示样式
+  const container = canvasContainer.value
+  if (container) {
+    container.style.borderColor = '#4caf50'
+    container.style.borderStyle = 'solid'
+  }
+}
+
+// 添加拖放状态
+const isDraggingOver = ref(false)
+
+// 处理拖入事件
+const handleDragEnter = (event: DragEvent) => {
+  event.preventDefault()
+  isDraggingOver.value = true
+  if (canvasContainer.value) {
+    canvasContainer.value.classList.add('drag-active')
+  }
+}
+
+// 处理拖离事件
+const handleDragLeave = (event: DragEvent) => {
+  event.preventDefault()
+  // 检查是否真的离开了容器
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  const x = event.clientX
+  const y = event.clientY
+
+  if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
+    isDraggingOver.value = false
+    if (canvasContainer.value) {
+      canvasContainer.value.classList.remove('drag-active')
+    }
+  }
+}
+
+// 修改现有的 handleExternalDrop 函数
+const handleExternalDrop = async (event: DragEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+
+  // 重置拖放状态
+  isDraggingOver.value = false
+  if (canvasContainer.value) {
+    canvasContainer.value.classList.remove('drag-active')
+  }
+
+  if (!event.dataTransfer || !canvasContainer.value) return
+
+  // 计算相对于画布的位置
+  const containerRect = canvasContainer.value.getBoundingClientRect()
+  const dropX = event.clientX - containerRect.left
+  const dropY = event.clientY - containerRect.top
+
+  // 处理拖放的文件（图片）
+  if (event.dataTransfer.files.length > 0) {
+    Array.from(event.dataTransfer.files).forEach((file) => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            addElementToCanvas({
+              type: 'image',
+              content: e.target.result as string,
+              style: {
+                width: '200px',
+                height: 'auto',
+                left: `${dropX}px`,
+                top: `${dropY}px`,
+                transform: 'translate(-50%, -50%)'
+              }
+            })
+          }
+        }
+        reader.readAsDataURL(file)
+      }
+    })
+    return
+  }
+
+  // 处理拖放的文本
+  const text = event.dataTransfer.getData('text')
+  if (text.trim()) {
+    addElementToCanvas({
+      type: 'text',
+      content: text,
+      style: {
+        fontSize: '24px',
+        color: '#000000',
+        left: `${dropX}px`,
+        top: `${dropY}px`,
+        transform: 'translate(-50%, -50%)'
+      }
+    })
+  }
 }
 
 onMounted(() => {
@@ -1653,6 +1766,16 @@ onUnmounted(() => {
   border-radius: 8px;
   position: relative;
   overflow: hidden;
+  transition: border-color 0.3s, border-style 0.3s;
+  z-index: 10000;
+}
+
+.canvas-container.drag-active {
+  border-color: #4caf50;
+  border-style: solid;
+  box-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
+  transform: scale(1.01);
+  transition: all 0.3s ease;
 }
 
 /* 修改辅助线样式 */
@@ -2114,6 +2237,58 @@ onUnmounted(() => {
     width: 14px;
     height: 14px;
     flex-shrink: 0;
+  }
+}
+
+/* 添加遮罩层样式 */
+.drag-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 99999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.drag-hint {
+  position: relative;
+  z-index: 100000;
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 24px 32px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: #333;
+  font-size: 18px;
+  font-weight: 500;
+  text-align: center;
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+}
+
+.drag-hint svg {
+  width: 48px;
+  height: 48px;
+  color: #4caf50;
+  animation: bounce 1s infinite;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
   }
 }
 </style>

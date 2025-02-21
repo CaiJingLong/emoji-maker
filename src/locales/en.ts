@@ -18,6 +18,7 @@ export default {
     moveToTop: 'Move to Top',
     moveToBottom: 'Move to Bottom',
     moveToCenter: 'Move to Center',
+    dropHint: 'Drop images or text here',
   },
   editor: {
     textPlaceholder: 'Text',

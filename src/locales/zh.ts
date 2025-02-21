@@ -18,6 +18,7 @@ export default {
     moveToTop: '置顶',
     moveToBottom: '置底',
     moveToCenter: '移到中央',
+    dropHint: '将图片或文本拖放到这里',
   },
   editor: {
     textPlaceholder: '文字',
