@@ -246,10 +246,71 @@ const selectedElement = computed(() =>
   selectedIndex.value !== null ? elements.value[selectedIndex.value] : null
 )
 const showExportDialog = ref(false)
+const isDragging = ref(false)
+
+// 历史记录相关的状态
+const MAX_HISTORY = 50 // 最大历史记录数
+const history = ref<Element[][]>([]) // 历史记录栈
+const currentHistoryIndex = ref(-1) // 当前历史记录索引
+const isHistoryAction = ref(false) // 是否是历史记录操作（用于防止历史记录操作触发 watch）
+const lastSavedState = ref<string>('') // 用于比较状态是否真的改变
+
+// 添加历史记录
+const addHistory = () => {
+  if (isHistoryAction.value || isDragging.value) return
+
+  const currentState = JSON.stringify(elements.value)
+  if (currentState === lastSavedState.value) return // 如果状态没有真正改变，不添加历史记录
+
+  // 如果当前不在最新状态，删除当前位置之后的历史记录
+  if (currentHistoryIndex.value < history.value.length - 1) {
+    history.value = history.value.slice(0, currentHistoryIndex.value + 1)
+  }
+
+  // 添加新的历史记录
+  history.value.push(JSON.parse(JSON.stringify(elements.value)))
+  currentHistoryIndex.value = history.value.length - 1
+  lastSavedState.value = currentState
+
+  // 如果历史记录超过最大数量，删除最早的记录
+  if (history.value.length > MAX_HISTORY) {
+    history.value.shift()
+    currentHistoryIndex.value--
+  }
+}
+
+// 撤销
+const undo = () => {
+  if (currentHistoryIndex.value > 0) {
+    isHistoryAction.value = true
+    currentHistoryIndex.value--
+    elements.value = JSON.parse(JSON.stringify(history.value[currentHistoryIndex.value]))
+    lastSavedState.value = JSON.stringify(elements.value)
+    isHistoryAction.value = false
+  }
+}
+
+// 重做
+const redo = () => {
+  if (currentHistoryIndex.value < history.value.length - 1) {
+    isHistoryAction.value = true
+    currentHistoryIndex.value++
+    elements.value = JSON.parse(JSON.stringify(history.value[currentHistoryIndex.value]))
+    lastSavedState.value = JSON.stringify(elements.value)
+    isHistoryAction.value = false
+  }
+}
 
 // 监听 elements 变化并保存到 localStorage
 watch(elements, (newElements) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(newElements))
+}, { deep: true })
+
+// 监听 elements 变化，自动添加历史记录
+watch(elements, () => {
+  if (!isHistoryAction.value) {
+    addHistory()
+  }
 }, { deep: true })
 
 // 从 localStorage 恢复数据
@@ -333,6 +394,7 @@ const startDrag = (event: MouseEvent | DragEvent, index?: number) => {
     const element = elements.value[index]
     if (element.isEditing) return
 
+    isDragging.value = true // 开始拖动
     const rect = (mouseEvent.target as HTMLElement).getBoundingClientRect()
     draggedElement.value = {
       index,
@@ -360,6 +422,10 @@ const onDrag = (event: MouseEvent) => {
 }
 
 const stopDrag = () => {
+  if (isDragging.value) {
+    isDragging.value = false // 结束拖动
+    addHistory() // 在拖动结束时添加历史记录
+  }
   draggedElement.value = null
 }
 
@@ -433,10 +499,27 @@ const updateTextColor = (event: Event) => {
 const handleKeyDown = (event: KeyboardEvent) => {
   // 检查是否有正在编辑的文字元素
   const hasEditingText = elements.value.some(element => element.type === 'text' && element.isEditing)
-  
-  // 只有在没有文字正在编辑时，才响应删除键
-  if (!hasEditingText && selectedIndex.value !== null && (event.key === 'Delete' || event.key === 'Backspace')) {
+
+  // 如果正在编辑文字，不处理快捷键
+  if (hasEditingText) return
+
+  // 处理删除键
+  if (selectedIndex.value !== null && (event.key === 'Delete' || event.key === 'Backspace')) {
     deleteElement(selectedIndex.value)
+  }
+
+  // 处理撤销快捷键 (Ctrl+Z / Command+Z)
+  if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
+    event.preventDefault()
+    undo()
+  }
+
+  // 处理重做快捷键 (Ctrl+Y / Command+Y 或 Ctrl+Shift+Z / Command+Shift+Z)
+  if ((event.ctrlKey || event.metaKey) &&
+      ((event.key.toLowerCase() === 'y' && !event.shiftKey) ||
+       (event.key.toLowerCase() === 'z' && event.shiftKey))) {
+    event.preventDefault()
+    redo()
   }
 }
 
@@ -469,6 +552,12 @@ const toggleVisibility = (index: number, event: Event) => {
 
 onMounted(() => {
   restoreData()
+  if (elements.value.length > 0) {
+    const initialState = JSON.stringify(elements.value)
+    history.value = [JSON.parse(initialState)]
+    currentHistoryIndex.value = 0
+    lastSavedState.value = initialState
+  }
   window.addEventListener('mousemove', onDrag)
   window.addEventListener('mouseup', stopDrag)
   window.addEventListener('click', handleClickOutside)
