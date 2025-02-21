@@ -47,19 +47,11 @@
                   </template>
                   <template v-else>
                     <span class="image-icon">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                        <polyline points="21 15 16 10 5 21"></polyline>
-                      </svg>
+                      <img
+                        :src="element.content"
+                        class="thumbnail"
+                        alt="thumbnail"
+                      />
                     </span>
                   </template>
                 </span>
@@ -67,7 +59,7 @@
                   {{
                     element.type === 'text'
                       ? element.content || t('editor.textPlaceholder')
-                      : t('editor.image')
+                      : t('editor.image') + ' ' + getImageNumber(index)
                   }}
                 </span>
               </div>
@@ -1663,6 +1655,15 @@ const duplicateElement = () => {
   selectedIndex.value = contextMenuIndex.value + 1
   hideContextMenu()
 }
+
+const getImageNumber = (index: number): string => {
+  // 只计算图片类型的元素
+  const imageElements = elements.value.filter(el => el.type === 'image');
+  // 获取当前元素之前的所有图片元素
+  const previousImages = elements.value.slice(0, index).filter(el => el.type === 'image');
+  // 当前是第几个图片 + 1（因为要从1开始）
+  return `#${previousImages.length + 1}`;
+};
 </script>
 
 <style scoped>
@@ -1671,4 +1672,22 @@ const duplicateElement = () => {
 @import '../styles/controlPanel.css';
 @import '../styles/textStyles.css';
 @import '../styles/animations.css';
+
+.image-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: #f5f5f5;
+}
+
+.thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 2px;
+}
 </style>
