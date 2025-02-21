@@ -8,6 +8,10 @@ export default {
     clear: 'Clear',
     language: 'Language',
     layers: 'Layers',
+    showGuidelines: 'Show Guidelines',
+    hideGuidelines: 'Hide Guidelines',
+    enableSnapping: 'Enable Snapping',
+    disableSnapping: 'Disable Snapping',
   },
   editor: {
     textPlaceholder: 'Text',

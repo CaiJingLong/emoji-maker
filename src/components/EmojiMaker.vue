@@ -2,6 +2,23 @@
   <div class="emoji-maker">
     <div class="layers-panel">
       <h3>{{ t('app.layers') }}</h3>
+      <div class="layer-settings">
+        <div class="setting-item" @click="toggleGuidelines">
+          <span class="setting-checkbox" :class="{'active': showGuidelines}"></span>
+          <span class="setting-label">{{ showGuidelines ? t('app.hideGuidelines') : t('app.showGuidelines') }}</span>
+        </div>
+        <div class="setting-item" @click="toggleSnapping">
+          <span
+            class="setting-checkbox"
+            :class="{
+              'active': enableSnapping
+            }"
+          ></span>
+          <span
+            class="setting-label"
+          >{{ enableSnapping ? t('app.disableSnapping') : t('app.enableSnapping') }}</span>
+        </div>
+      </div>
       <ul class="layer-list">
         <li
           v-for="(element, index) in elements"
@@ -193,7 +210,7 @@
                 type="range"
                 :value="parseInt(selectedElement.style.width || '200')"
                 min="50"
-                max="500"
+                max="800"
                 @input="updateImageSize($event)"
               >
               <span class="size-value">{{ selectedElement.style.width }}</span>
@@ -265,6 +282,8 @@ interface SnapInfo {
 }
 
 const STORAGE_KEY = 'emoji-maker-elements'
+const GUIDELINES_STORAGE_KEY = 'emoji-maker-guidelines'
+const SNAPPING_STORAGE_KEY = 'emoji-maker-snapping'
 const SNAP_THRESHOLD = 10 // 吸附阈值（像素）
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -277,6 +296,10 @@ const selectedElement = computed(() =>
 )
 const showExportDialog = ref(false)
 const isDragging = ref(false)
+
+// 添加辅助线和吸附功能的开关状态
+const showGuidelines = ref(localStorage.getItem(GUIDELINES_STORAGE_KEY) === 'true') // 从 localStorage 读取状态
+const enableSnapping = ref(localStorage.getItem(SNAPPING_STORAGE_KEY) === 'true') // 从 localStorage 读取状态
 
 // 历史记录相关的状态
 const MAX_HISTORY = 50 // 最大历史记录数
@@ -326,6 +349,8 @@ const getElementBounds = (element: Element, index: number): DOMRect | null => {
 // 检查并生成对齐辅助线
 const checkAlignment = (currentIndex: number) => {
   if (!draggedElement.value) return []
+  if (!showGuidelines.value) return [] // 如果辅助线关闭，直接返回空数组
+  if (!enableSnapping.value) return [] // 如果吸附功能关闭，直接返回空数组
 
   guidelines.value = []
   snapState.value = []
@@ -704,9 +729,11 @@ const updateTextSize = (event: Event) => {
 const updateImageSize = (event: Event) => {
   if (selectedIndex.value === null) return
   const input = event.target as HTMLInputElement
-  const width = input.value
+  const width = Math.min(parseInt(input.value), 800) // 限制最大宽度为800px
   elements.value[selectedIndex.value].style.width = `${width}px`
   elements.value[selectedIndex.value].style.height = 'auto'
+  // 更新input的值，以防超出限制
+  input.value = width.toString()
 }
 
 const updateRotation = (event: Event) => {
@@ -792,6 +819,38 @@ const toggleVisibility = (index: number, event: Event) => {
   element.isVisible = element.isVisible === undefined ? false : !element.isVisible
 }
 
+const toggleGuidelines = () => {
+  showGuidelines.value = !showGuidelines.value
+  // 如果关闭辅助线，同时关闭吸附功能
+  if (!showGuidelines.value) {
+    enableSnapping.value = false
+  }
+}
+
+const toggleSnapping = () => {
+  enableSnapping.value = !enableSnapping.value
+  // 如果开启吸附功能，同时开启辅助线
+  if (enableSnapping.value) {
+    showGuidelines.value = true
+  }
+}
+
+// 监听辅助线状态变化
+watch(showGuidelines, (newValue) => {
+  if (!newValue) {
+    // 如果辅助线被关闭，清除所有辅助线
+    guidelines.value = []
+  }
+  // 保存状态到 localStorage
+  localStorage.setItem(GUIDELINES_STORAGE_KEY, newValue.toString())
+})
+
+// 监听吸附功能状态变化
+watch(enableSnapping, (newValue) => {
+  // 保存状态到 localStorage
+  localStorage.setItem(SNAPPING_STORAGE_KEY, newValue.toString())
+})
+
 onMounted(() => {
   restoreData()
   if (elements.value.length > 0) {
@@ -800,6 +859,15 @@ onMounted(() => {
     currentHistoryIndex.value = 0
     lastSavedState.value = initialState
   }
+
+  // 确保初始状态的一致性
+  if (enableSnapping.value && !showGuidelines.value) {
+    showGuidelines.value = true
+  }
+  if (!showGuidelines.value && enableSnapping.value) {
+    enableSnapping.value = false
+  }
+
   window.addEventListener('mousemove', onDrag)
   window.addEventListener('mouseup', stopDrag)
   window.addEventListener('click', handleClickOutside)
@@ -839,6 +907,56 @@ onUnmounted(() => {
   padding-bottom: 10px;
   border-bottom: 1px solid #eee;
   font-size: 16px;
+  color: #333;
+}
+
+.layer-settings {
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.setting-item:last-child {
+  margin-bottom: 0;
+}
+
+.setting-checkbox {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #666;
+  border-radius: 4px;
+  margin-right: 8px;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.setting-checkbox.active {
+  background-color: #4CAF50;
+  border-color: #4CAF50;
+}
+
+.setting-checkbox.active::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.setting-label {
+  font-size: 14px;
   color: #333;
 }
 
@@ -957,6 +1075,7 @@ onUnmounted(() => {
   position: absolute;
   pointer-events: none;
   z-index: 1000;
+  display: v-show="showGuidelines";
 }
 
 .guideline.horizontal {
@@ -1059,12 +1178,20 @@ onUnmounted(() => {
   border-color: var(--element-color);
 }
 
+/* 专门处理图片元素的样式 */
+.draggable-element:has(img) {
+  line-height: 0;
+  font-size: 0;
+}
+
 .draggable-element img {
   width: 100%;
   height: 100%;
   pointer-events: none;
   object-fit: contain;
   transform-origin: center center;
+  display: block;
+  vertical-align: top;
 }
 
 .text-element {
@@ -1072,6 +1199,8 @@ onUnmounted(() => {
   border: 1px solid transparent;
   white-space: nowrap;
   display: inline-block;
+  line-height: normal; /* 恢复文字的正常行高 */
+  font-size: inherit; /* 恢复文字的字体大小继承 */
 }
 
 .text-element[contenteditable="true"] {
@@ -1097,10 +1226,12 @@ onUnmounted(() => {
   gap: 10px;
   justify-content: center;
   padding: 0 20px;
+  flex-wrap: wrap;
 }
 
 .tools-container button {
   flex: 1;
+  min-width: 120px;
   max-width: 200px;
   padding: 12px 20px;
   margin: 0;
@@ -1111,6 +1242,20 @@ onUnmounted(() => {
   cursor: pointer;
   font-size: 16px;
   white-space: nowrap;
+  transition: background-color 0.3s;
+}
+
+.tools-container button.toggle-btn {
+  background-color: #666;
+}
+
+.tools-container button.toggle-btn.active {
+  background-color: #4CAF50;
+}
+
+.tools-container button.toggle-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 .tools-container button:hover {
