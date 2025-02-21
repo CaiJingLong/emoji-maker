@@ -744,9 +744,40 @@ const restoreData = () => {
   const savedData = localStorage.getItem(STORAGE_KEY)
   if (savedData) {
     try {
-      elements.value = JSON.parse(savedData)
+      const loadedElements = JSON.parse(savedData)
+      // 验证数据格式是否正确
+      if (!Array.isArray(loadedElements)) {
+        console.error('恢复数据失败: 数据格式不正确')
+        return
+      }
+
+      elements.value = loadedElements.map(element => {
+        // 验证元素格式是否正确
+        if (typeof element !== 'object' || !element) {
+          console.error('跳过无效元素:', element)
+          return null
+        }
+
+        // 确保基本属性存在
+        const validElement = {
+          type: element.type || 'text',
+          content: element.content || '',
+          id: element.id || 0,
+          style: element.style || {},
+          isEditing: false,
+          initialCenter: element.initialCenter || {
+            x: 200,
+            y: 200
+          }
+        }
+
+        return initializeElementStyle(validElement)
+      }).filter(element => element !== null) // 过滤掉无效元素
     } catch (error) {
       console.error('恢复数据失败:', error)
+      // 如果恢复失败，清空本地存储并初始化为空数组
+      localStorage.removeItem(STORAGE_KEY)
+      elements.value = []
     }
   }
 }
@@ -766,7 +797,7 @@ const onFileSelected = (event: Event) => {
             elements.value.length > 0 ? Math.max(...elements.value.map((el) => el.id)) + 1 : 0
           const containerWidth = canvasContainer.value?.offsetWidth || 400
           const containerHeight = canvasContainer.value?.offsetHeight || 400
-          elements.value.push({
+          const element = initializeElementStyle({
             type: 'image',
             content: e.target.result as string,
             id: newId,
@@ -784,6 +815,7 @@ const onFileSelected = (event: Event) => {
               y: Math.round(containerHeight / 2),
             },
           })
+          elements.value.push(element)
         }
       }
       reader.readAsDataURL(file)
@@ -795,7 +827,7 @@ const addText = () => {
   const newId = elements.value.length > 0 ? Math.max(...elements.value.map((el) => el.id)) + 1 : 0
   const containerWidth = canvasContainer.value?.offsetWidth || 400
   const containerHeight = canvasContainer.value?.offsetHeight || 400
-  elements.value.push({
+  const element = initializeElementStyle({
     type: 'text',
     content: t('editor.textPlaceholder'),
     id: newId,
@@ -815,6 +847,7 @@ const addText = () => {
       y: Math.round(containerHeight / 2),
     },
   })
+  elements.value.push(element)
 }
 
 const startDrag = (event: MouseEvent | DragEvent, index?: number) => {
@@ -1082,6 +1115,11 @@ const updateBorderStyle = (event: Event) => {
 }
 
 const handleKeyDown = (event: KeyboardEvent) => {
+  // 忽略单独的修饰键事件
+  if (['Control', 'Shift', 'Alt', 'Meta'].includes(event.key)) {
+    return
+  }
+
   // 检查是否有正在编辑的文字元素
   const hasEditingText = elements.value.some(
     (element) => element.type === 'text' && element.isEditing,
@@ -1114,49 +1152,54 @@ const handleKeyDown = (event: KeyboardEvent) => {
   // 处理粘贴快捷键 (Ctrl+V / Command+V)
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
     event.preventDefault()
-    // 不再使用 execCommand('paste')，而是直接从剪贴板读取
-    navigator.clipboard.read().then(async (clipboardItems) => {
-      for (const clipboardItem of clipboardItems) {
-        // 优先处理图片
-        for (const type of clipboardItem.types) {
-          if (type.startsWith('image/')) {
-            const blob = await clipboardItem.getType(type)
-            const reader = new FileReader()
-            reader.onload = (e) => {
-              if (e.target?.result) {
-                addElementToCanvas({
-                  type: 'image',
-                  content: e.target.result as string,
-                  style: {
-                    width: '200px',
-                    height: 'auto'
-                  }
-                })
+    // 使用 try-catch 包装剪贴板操作
+    try {
+      navigator.clipboard.read().then(async (clipboardItems) => {
+        for (const clipboardItem of clipboardItems) {
+          // 优先处理图片
+          for (const type of clipboardItem.types) {
+            if (type.startsWith('image/')) {
+              const blob = await clipboardItem.getType(type)
+              const reader = new FileReader()
+              reader.onload = (e) => {
+                if (e.target?.result) {
+                  addElementToCanvas({
+                    type: 'image',
+                    content: e.target.result as string,
+                    style: {
+                      width: '200px',
+                      height: 'auto'
+                    }
+                  })
+                }
               }
+              reader.readAsDataURL(blob)
+              return
             }
-            reader.readAsDataURL(blob)
-            return
+          }
+          // 如果没有图片，尝试读取文本
+          if (clipboardItem.types.includes('text/plain')) {
+            const text = await clipboardItem.getType('text/plain')
+            const textContent = await text.text()
+            if (textContent.trim()) {
+              addElementToCanvas({
+                type: 'text',
+                content: textContent,
+                style: {
+                  fontSize: '24px',
+                  color: '#000000'
+                }
+              })
+            }
           }
         }
-        // 如果没有图片，尝试读取文本
-        if (clipboardItem.types.includes('text/plain')) {
-          const text = await clipboardItem.getType('text/plain')
-          const textContent = await text.text()
-          if (textContent.trim()) {
-            addElementToCanvas({
-              type: 'text',
-              content: textContent,
-              style: {
-                fontSize: '24px',
-                color: '#000000'
-              }
-            })
-          }
-        }
-      }
-    }).catch((error) => {
-      console.error('读取剪贴板失败:', error)
-    })
+      }).catch(() => {
+        // 忽略剪贴板错误
+      })
+    } catch (error) {
+      // 忽略任何剪贴板相关的错误
+      console.debug('剪贴板访问被拒绝或不可用')
+    }
   }
 }
 
@@ -1168,7 +1211,7 @@ const addElementToCanvas = (elementData: { type: 'text' | 'image', content: stri
   const left = elementData.style.left || '50%'
   const top = elementData.style.top || '50%'
 
-  elements.value.push({
+  const element = initializeElementStyle({
     type: elementData.type,
     content: elementData.content,
     id: newId,
@@ -1187,51 +1230,7 @@ const addElementToCanvas = (elementData: { type: 'text' | 'image', content: stri
       y: parseInt(top)
     },
   })
-}
-
-// 修改 handlePaste 函数
-const handlePaste = async (event: ClipboardEvent) => {
-  event.preventDefault()
-  const clipboardData = event.clipboardData
-  if (!clipboardData) return
-
-  // 优先处理图片
-  const items = clipboardData.items
-  for (const item of items) {
-    if (item.type.startsWith('image/')) {
-      const file = item.getAsFile()
-      if (file) {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            addElementToCanvas({
-              type: 'image',
-              content: e.target.result as string,
-              style: {
-                width: '200px',
-                height: 'auto'
-              }
-            })
-          }
-        }
-        reader.readAsDataURL(file)
-        return
-      }
-    }
-  }
-
-  // 如果没有图片，尝试处理文本
-  const text = clipboardData.getData('text/plain')
-  if (text.trim()) {
-    addElementToCanvas({
-      type: 'text',
-      content: text,
-      style: {
-        fontSize: '24px',
-        color: '#000000'
-      }
-    })
-  }
+  elements.value.push(element)
 }
 
 const updateOpacity = (event: Event) => {
@@ -1452,8 +1451,6 @@ onMounted(() => {
   window.addEventListener('click', handleClickOutside)
   window.addEventListener('keydown', handleKeyDown)
   window.addEventListener('click', hideContextMenu)
-  // 添加粘贴事件监听
-  window.addEventListener('paste', handlePaste)
 })
 
 onUnmounted(() => {
@@ -1462,7 +1459,6 @@ onUnmounted(() => {
   window.removeEventListener('click', handleClickOutside)
   window.removeEventListener('keydown', handleKeyDown)
   window.removeEventListener('click', hideContextMenu)
-  window.removeEventListener('paste', handlePaste)
 })
 
 const dropElement = (event: DragEvent, index: number) => {
@@ -1529,6 +1525,54 @@ watch(enableSnapping, (newValue) => {
   // 保存状态到 localStorage
   localStorage.setItem(SNAPPING_STORAGE_KEY, newValue.toString())
 })
+
+const initializeElementStyle = (element: any) => {
+  if (!element || typeof element !== 'object') {
+    throw new Error('无效的元素数据')
+  }
+
+  if (!element.style || typeof element.style !== 'object') {
+    element.style = {}
+  }
+
+  // 确保基本样式属性都存在
+  const defaultStyle = {
+    left: '50%',
+    top: '50%',
+    position: 'absolute',
+    transform: 'translate(-50%, -50%)',
+    fontSize: '16px',
+    color: '#000000',
+    width: 'auto',
+    height: 'auto',
+    rotate: '0deg',
+    opacity: '1',
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    padding: '0px'
+  }
+
+  // 合并默认样式和现有样式
+  element.style = {
+    ...defaultStyle,
+    ...element.style
+  }
+
+  return element
+}
+
+const addElement = (element) => {
+  elements.value.push(initializeElementStyle(element));
+  selectedIndex.value = elements.value.length - 1;
+  saveToLocalStorage();
+};
+
+const loadElements = () => {
+  const savedElements = localStorage.getItem('emojiMakerElements');
+  if (savedElements) {
+    elements.value = JSON.parse(savedElements).map(element => initializeElementStyle(element));
+  }
+};
 </script>
 
 <style scoped>

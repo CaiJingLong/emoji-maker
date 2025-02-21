@@ -20,7 +20,7 @@
 import { ref, watch } from 'vue'
 
 const props = defineProps<{
-  modelValue: string
+  modelValue?: string
 }>()
 
 const emit = defineEmits<{
@@ -31,6 +31,10 @@ const alpha = ref(100)
 
 // 初始化时从当前颜色中提取透明度
 watch(() => props.modelValue, (newColor) => {
+  if (!newColor) {
+    alpha.value = 100
+    return
+  }
   if (newColor.startsWith('rgba')) {
     const match = newColor.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/)
     if (match) {
@@ -53,8 +57,8 @@ const openColorPicker = () => {
   input.click()
 }
 
-const getRGBColor = (color: string): string => {
-  if (!color) return '#ffffff'
+const getRGBColor = (color: string | undefined | null): string => {
+  if (!color) return '#000000'
   if (color.startsWith('rgba')) {
     const match = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+)/)
     if (match) {
