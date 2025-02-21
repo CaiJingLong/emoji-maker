@@ -289,18 +289,18 @@ const guidelines = ref<GuidelineInfo[]>([])
 const snapState = ref<SnapInfo[]>([])
 
 // 添加颜色常量
-const CONTAINER_GUIDELINE_COLOR = '#FF6B6B' // 容器辅助线颜色
+const CONTAINER_GUIDELINE_COLOR = '#FF0000' // 容器辅助线颜色改为纯红色
 const ELEMENT_COLORS = [
-  '#4ECDC4', // 青色
-  '#45B7D1', // 蓝色
-  '#96CEB4', // 绿色
-  '#FFEEAD', // 黄色
-  '#D4A5A5', // 粉色
-  '#9B59B6', // 紫色
-  '#3498DB', // 深蓝色
-  '#2ECC71', // 深绿色
-  '#F1C40F', // 金色
-  '#E74C3C'  // 红色
+  '#00FF00',   // 鲜绿色
+  '#0000FF',   // 纯蓝色
+  '#FF00FF',   // 洋红色
+  '#00FFFF',   // 青色
+  '#FFA500',   // 橙色
+  '#9400D3',   // 深紫色
+  '#FFD700',   // 金色
+  '#32CD32',   // 酸橙绿
+  '#FF69B4',   // 粉红色
+  '#4169E1'    // 皇家蓝
 ]
 
 // 计算元素的边界框
