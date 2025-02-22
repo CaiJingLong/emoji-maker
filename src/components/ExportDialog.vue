@@ -9,7 +9,7 @@
       <div class="dialog-content">
         <div class="setting-item">
           <label>{{ t('editor.exportFormat') }}</label>
-          <select v-model="format">
+          <select v-model="exportStore.settings.format">
             <option value="png">PNG ({{ t('editor.withTransparency') }})</option>
             <option value="jpeg">JPEG</option>
             <option value="webp">WebP</option>
@@ -19,18 +19,21 @@
         <div class="setting-item">
           <label>{{ t('editor.backgroundColor') }}</label>
           <div class="color-setting">
-            <select v-model="bgType">
+            <select v-model="exportStore.settings.bgType">
               <option value="transparent">{{ t('editor.transparent') }}</option>
               <option value="color">{{ t('editor.solidColor') }}</option>
             </select>
-            <ColorPicker v-if="bgType === 'color'" v-model="bgColor" />
+            <ColorPicker 
+              v-if="exportStore.settings.bgType === 'color'" 
+              v-model="exportStore.settings.bgColor" 
+            />
           </div>
         </div>
 
         <div class="setting-item">
           <label>{{ t('editor.quality') }}</label>
           <div class="quality-setting">
-            <select v-model="quality">
+            <select v-model="exportStore.settings.quality">
               <option value="0.5">0.5x</option>
               <option value="1">1x</option>
               <option value="1.5">1.5x</option>
@@ -44,13 +47,13 @@
         </div>
 
         <div class="preview-info">
-          <div class="preview-thumbnail" v-if="thumbnailUrl">
-            <img :src="thumbnailUrl" alt="预览" />
+          <div class="preview-thumbnail" v-if="exportStore.previewInfo.thumbnailUrl">
+            <img :src="exportStore.previewInfo.thumbnailUrl" alt="预览" />
           </div>
           <div class="preview-details">
-            <div v-if="previewSize">{{ t('editor.estimatedSize') }}: {{ previewSize }}</div>
-            <div v-if="dimensions">{{ t('editor.dimensions') }}: {{ dimensions }}</div>
-            <div v-if="!previewSize && !dimensions" class="preview-loading">{{ t('editor.calculating') }}...</div>
+            <div v-if="exportStore.previewInfo.size">{{ t('editor.estimatedSize') }}: {{ exportStore.previewInfo.size }}</div>
+            <div v-if="exportStore.previewInfo.dimensions">{{ t('editor.dimensions') }}: {{ exportStore.previewInfo.dimensions }}</div>
+            <div v-if="!exportStore.previewInfo.size && !exportStore.previewInfo.dimensions" class="preview-loading">{{ t('editor.calculating') }}...</div>
           </div>
         </div>
       </div>
@@ -64,12 +67,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useLanguageStore } from '../stores/language'
-import html2canvas from 'html2canvas'
+import { useExportStore } from '../stores/exportStore'
 import ColorPicker from './ColorPicker.vue'
 
 const { t } = useLanguageStore()
+const exportStore = useExportStore()
 
 const props = defineProps<{
   container: HTMLElement | null
@@ -79,145 +83,44 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const format = ref('png')
-const bgType = ref('transparent')
-const bgColor = ref('rgba(255, 255, 255, 1)')
-const bgAlpha = ref(100)
-const quality = ref('2')
-const previewSize = ref('')
-const thumbnailUrl = ref('')
-const dimensions = ref('')
-
-// 防抖函数
-const debounce = <T extends (...args: Parameters<T>) => ReturnType<T>>(fn: T, delay: number) => {
-  let timer: number | null = null
-  return (...args: Parameters<T>) => {
-    if (timer) window.clearTimeout(timer)
-    timer = window.setTimeout(() => {
-      fn(...args)
-      timer = null
-    }, delay)
-  }
-}
-
-// 预览导出大小
-const previewExportSize = async () => {
-  if (!props.container) return
-
-  try {
-    const canvas = await html2canvas(props.container, {
-      backgroundColor: bgType.value === 'transparent' ? null : bgColor.value,
-      scale: Number(quality.value)
-    })
-
-    // 更新尺寸信息
-    const width = canvas.width
-    const height = canvas.height
-    dimensions.value = `${width} × ${height}px`
-
-    // 创建缩略图
-    const thumbnailCanvas = document.createElement('canvas')
-    const ctx = thumbnailCanvas.getContext('2d')
-    if (ctx) {
-      // 设置缩略图大小为 40x40，保持比例
-      const thumbSize = 40
-      const ratio = Math.min(thumbSize / width, thumbSize / height)
-      thumbnailCanvas.width = width * ratio
-      thumbnailCanvas.height = height * ratio
-
-      // 绘制缩略图
-      ctx.drawImage(canvas, 0, 0, thumbnailCanvas.width, thumbnailCanvas.height)
-      thumbnailUrl.value = thumbnailCanvas.toDataURL()
-    }
-
-    // 转换为 blob 以获取大小
-    const blob = await new Promise<Blob>((resolve) => {
-      canvas.toBlob((blob) => {
-        resolve(blob!)
-      }, `image/${format.value}`)
-    })
-
-    // 格式化文件大小
-    const size = blob.size
-    if (size < 1024) {
-      previewSize.value = `${size} B`
-    } else if (size < 1024 * 1024) {
-      previewSize.value = `${(size / 1024).toFixed(1)} KB`
-    } else {
-      previewSize.value = `${(size / (1024 * 1024)).toFixed(1)} MB`
-    }
-  } catch (error) {
-    console.error('预览大小计算失败:', error)
-    previewSize.value = ''
-    dimensions.value = ''
-    thumbnailUrl.value = ''
-  }
-}
-
-// 创建防抖版本的预览函数
-const debouncedPreview = debounce(previewExportSize, 300)
-
-// 监听设置变化，更新预览大小
-watch([format, quality], () => {
-  // 格式和质量变化立即更新
-  previewExportSize()
-})
-
-// 背景类型和颜色使用防抖
-watch([bgType, bgColor], () => {
-  debouncedPreview()
-})
-
 // 导出图片
 const handleExport = async () => {
   if (!props.container) return
-
-  try {
-    // 临时移除所有辅助性元素的类名
-    const elements = props.container.querySelectorAll('.draggable-element')
-    elements.forEach(el => {
-      el.classList.remove('show-boundary', 'selected')
-    })
-
-    // 隐藏所有辅助线
-    const guidelines = props.container.querySelectorAll('.guideline')
-    guidelines.forEach(el => {
-      ;(el as HTMLElement).style.display = 'none'
-    })
-
-    // 导出图片
-    const canvas = await html2canvas(props.container, {
-      backgroundColor: bgType.value === 'transparent' ? null : bgColor.value,
-      scale: Number(quality.value)
-    })
-
-    // 恢复辅助性元素
-    elements.forEach(el => {
-      if (el.getAttribute('data-selected') === 'true') {
-        el.classList.add('selected')
-      }
-    })
-    guidelines.forEach(el => {
-      ;(el as HTMLElement).style.display = ''
-    })
-
-    // 处理导出
-    const dataUrl = canvas.toDataURL(format.value, quality.value)
-    const link = document.createElement('a')
-    link.download = `emoji-${Date.now()}.${format.value.split('/')[1]}`
-    link.href = dataUrl
-    link.click()
-
-    emit('close')
-  } catch (error) {
-    console.error('导出失败:', error)
-  }
+  await exportStore.exportImage(props.container)
+  emit('close')
 }
 
-// 在 script setup 中添加
+// 监听设置变化，更新预览
+watch(
+  () => [
+    exportStore.settings.format,
+    exportStore.settings.quality
+  ],
+  () => {
+    if (props.container) {
+      exportStore.calculatePreview(props.container)
+    }
+  }
+)
+
+// 背景类型和颜色使用防抖更新
+watch(
+  () => [
+    exportStore.settings.bgType,
+    exportStore.settings.bgColor
+  ],
+  () => {
+    if (props.container) {
+      exportStore.debouncedCalculatePreview(props.container)
+    }
+  }
+)
+
+// 在组件挂载时计算预览
 onMounted(() => {
-  // 弹窗打开时立即计算预览
-  previewExportSize()
+  if (props.container) {
+    exportStore.calculatePreview(props.container)
+  }
 })
 </script>
 
