@@ -1181,5 +1181,21 @@
 6. 修改相关组件使用新的 persistStore
 7. 优化了代码结构，提高了可维护性
 
+## 版本 88 - 2024-03-21
+
+### 需求
+- 抽取键盘事件相关功能，统一管理所有键盘操作
+
+### 完成事项
+1. 创建 keyboardStore 统一管理键盘事件
+2. 将以下功能从 EmojiMaker 组件移到 keyboardStore：
+   - Ctrl+Z/Command+Z 撤销功能
+   - Ctrl+Shift+Z/Command+Shift+Z 重做功能
+   - Ctrl+V/Command+V 粘贴功能
+   - Delete/Backspace 删除元素功能
+3. 优化了键盘事件的处理逻辑
+4. 确保所有键盘功能在文本编辑时不会误触发
+5. 优化了代码结构，提高了可维护性
+
 # Emoji Maker 开发日志
 

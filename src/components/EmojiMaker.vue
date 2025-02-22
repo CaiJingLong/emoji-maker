@@ -427,10 +427,12 @@ import { usePersistStore, type Element } from '../stores/persistStore'
 import ExportDialog from './ExportDialog.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
 import ColorPicker from './ColorPicker.vue'
+import { useKeyboardStore } from '../stores/keyboardStore'
 
 const { t } = useLanguageStore()
 const assistStore = useAssistStore()
 const persistStore = usePersistStore()
+const keyboardStore = useKeyboardStore()
 
 // 添加颜色常量
 const ELEMENT_COLORS = [
@@ -527,102 +529,26 @@ const onFileSelected = (event: Event) => {
   }
 }
 
-// 添加元素到画布
 const addElementToCanvas = (element: Partial<Element>) => {
   const newId = elements.value.length > 0 ? Math.max(...elements.value.map((el) => el.id)) + 1 : 0
   const containerWidth = canvasContainer.value?.offsetWidth || 400
   const containerHeight = canvasContainer.value?.offsetHeight || 400
-
-  const newElement: Element = {
-    type: element.type || 'text',
-    content: element.content || '',
+  const newElement = initializeElementStyle({
+    ...element,
     id: newId,
-    style: {
-      left: '50%',
-      top: '50%',
-      position: 'absolute',
-      transform: 'translate(-50%, -50%)',
-      fontSize: element.style?.fontSize || '16px',
-      color: element.style?.color || '#000000',
-      width: element.style?.width || 'auto',
-      height: element.style?.height || 'auto',
-      rotate: element.style?.rotate || '0deg',
-      opacity: element.style?.opacity || '1',
-      borderStyle: element.style?.borderStyle || 'none',
-      backgroundColor: element.style?.backgroundColor || 'transparent',
-      padding: element.style?.padding || '0px'
-    },
     initialCenter: {
       x: Math.round(containerWidth / 2),
       y: Math.round(containerHeight / 2),
     },
-  }
-
+  })
   elements.value.push(newElement)
   selectedIndex.value = elements.value.length - 1
 }
 
-// 处理粘贴事件
-const handlePaste = async (event: Event) => {
-  try {
-    const clipboardItems = await navigator.clipboard.read()
-    for (const clipboardItem of clipboardItems) {
-      // 优先处理图片
-      for (const type of clipboardItem.types) {
-        if (type.startsWith('image/')) {
-          const blob = await clipboardItem.getType(type)
-          const reader = new FileReader()
-          reader.onload = (e) => {
-            if (e.target?.result) {
-              addElementToCanvas({
-                type: 'image',
-                content: e.target.result as string,
-                style: {
-                  left: '50%',
-                  top: '50%',
-                  position: 'absolute',
-                  width: '200px',
-                  height: 'auto'
-                }
-              })
-            }
-          }
-          reader.readAsDataURL(blob)
-          return
-        }
-      }
-      // 如果没有图片，尝试读取文本
-      if (clipboardItem.types.includes('text/plain')) {
-        const text = await clipboardItem.getType('text/plain')
-        const textContent = await text.text()
-        if (textContent.trim()) {
-          addElementToCanvas({
-            type: 'text',
-            content: textContent,
-            style: {
-              left: '50%',
-              top: '50%',
-              position: 'absolute',
-              fontSize: '24px',
-              color: '#000000'
-            }
-          })
-        }
-      }
-    }
-  } catch (error) {
-    console.debug('剪贴板访问被拒绝或不可用')
-  }
-}
-
 const addText = () => {
-  const newId = elements.value.length > 0 ? Math.max(...elements.value.map((el) => el.id)) + 1 : 0
-  const containerWidth = canvasContainer.value?.offsetWidth || 400
-  const containerHeight = canvasContainer.value?.offsetHeight || 400
-  const element = initializeElementStyle({
+  addElementToCanvas({
     type: 'text',
     content: t('editor.textPlaceholder'),
-    id: newId,
     style: {
       left: '50%',
       top: '50%',
@@ -634,12 +560,7 @@ const addText = () => {
       borderStyle: 'none',
     },
     isEditing: false,
-    initialCenter: {
-      x: Math.round(containerWidth / 2),
-      y: Math.round(containerHeight / 2),
-    },
   })
-  elements.value.push(element)
 }
 
 const isDraggingOver = ref(false)
@@ -942,37 +863,16 @@ const updateBorderStyle = (event: Event) => {
   elements.value[selectedIndex.value].style.borderStyle = select.value
 }
 
-const handleKeyDown = (event: KeyboardEvent) => {
-  // 如果正在编辑文本，不处理快捷键
-  if (selectedElement.value?.isEditing) return
-
-  // 处理快捷键
-  if (event.ctrlKey || event.metaKey) {
-    switch (event.key.toLowerCase()) {
-      case 'z':
-        event.preventDefault()
-        if (event.shiftKey) {
-          const redoResult = persistStore.redo()
-          if (redoResult) {
-            elements.value = redoResult
-          }
-        } else {
-          const undoResult = persistStore.undo()
-          if (undoResult) {
-            elements.value = undoResult
-          }
-        }
-        break
-      case 'v':
-        event.preventDefault()
-        handlePaste(event)
-        break
-    }
-  } else if (event.key === 'Delete' || event.key === 'Backspace') {
-    if (selectedIndex.value !== null) {
-      event.preventDefault()
-      deleteElement(selectedIndex.value)
-    }
+const handleKeyDown = async (event: KeyboardEvent) => {
+  const result = await keyboardStore.handleKeyDown(event, {
+    selectedElement: selectedElement.value,
+    deleteElement,
+    selectedIndex: selectedIndex.value,
+    addElementToCanvas
+  })
+  
+  if (result?.type === 'history') {
+    elements.value = result.elements
   }
 }
 
