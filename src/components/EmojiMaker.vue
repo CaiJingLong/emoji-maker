@@ -105,32 +105,32 @@
         </div>
         <div class="accordion-content" :class="{ 'is-expanded': isEditAssistExpanded }">
           <div class="assist-settings">
-            <div class="setting-item" @click="toggleGuidelines">
-              <span class="setting-checkbox" :class="{ active: showGuidelines }"></span>
+            <div class="setting-item" @click="assistStore.toggleGuidelines">
+              <span class="setting-checkbox" :class="{ active: assistStore.showGuidelines }"></span>
               <span class="setting-label">{{
-                showGuidelines ? t('app.hideGuidelines') : t('app.showGuidelines')
+                assistStore.showGuidelines ? t('app.hideGuidelines') : t('app.showGuidelines')
               }}</span>
             </div>
-            <div class="setting-item" @click="toggleSnapping">
+            <div class="setting-item" @click="assistStore.toggleSnapping">
               <span
                 class="setting-checkbox"
                 :class="{
-                  active: enableSnapping,
+                  active: assistStore.enableSnapping,
                 }"
               ></span>
               <span class="setting-label">{{
-                enableSnapping ? t('app.disableSnapping') : t('app.enableSnapping')
+                assistStore.enableSnapping ? t('app.disableSnapping') : t('app.enableSnapping')
               }}</span>
             </div>
-            <div class="setting-item" @click="toggleOtherBoundaries">
+            <div class="setting-item" @click="assistStore.toggleOtherBoundaries">
               <span
                 class="setting-checkbox"
                 :class="{
-                  active: showOtherBoundaries,
+                  active: assistStore.showOtherBoundaries,
                 }"
               ></span>
               <span class="setting-label">{{
-                showOtherBoundaries ? t('app.hideOtherBoundaries') : t('app.showOtherBoundaries')
+                assistStore.showOtherBoundaries ? t('app.hideOtherBoundaries') : t('app.showOtherBoundaries')
               }}</span>
             </div>
           </div>
@@ -141,7 +141,7 @@
     <div class="main-content">
       <div class="canvas-area">
         <div class="canvas-container" ref="canvasContainer" @dragover.prevent="handleDragOver" @drop.prevent="handleExternalDrop">
-          <template v-for="(guideline, index) in guidelines" :key="index">
+          <template v-for="(guideline, index) in assistStore.guidelines" :key="index">
             <div
               class="guideline"
               :class="guideline.type"
@@ -158,7 +158,7 @@
             class="draggable-element"
             :class="{
               selected: selectedIndex === index,
-              'show-boundary': isDragging && (selectedIndex === index || showOtherBoundaries),
+              'show-boundary': isDragging && (selectedIndex === index || assistStore.showOtherBoundaries),
             }"
             :style="{
               left: element.style.left,
@@ -422,11 +422,13 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useLanguageStore } from '../stores/language'
+import { useAssistStore } from '../stores/assistStore'
 import ExportDialog from './ExportDialog.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
 import ColorPicker from './ColorPicker.vue'
 
 const { t } = useLanguageStore()
+const assistStore = useAssistStore()
 
 interface Element {
   type: 'image' | 'text'
@@ -483,20 +485,12 @@ const selectedElement = computed(() =>
 const showExportDialog = ref(false)
 const isDragging = ref(false)
 
-// 添加辅助线和吸附功能的开关状态
-const showGuidelines = ref(localStorage.getItem(GUIDELINES_STORAGE_KEY) === 'true') // 从 localStorage 读取状态
-const enableSnapping = ref(localStorage.getItem(SNAPPING_STORAGE_KEY) === 'true') // 从 localStorage 读取状态
-const showOtherBoundaries = ref(localStorage.getItem('emoji-maker-show-boundaries') === 'true') // 新增：是否显示其他组件边界线
-
 // 历史记录相关的状态
 const MAX_HISTORY = 50 // 最大历史记录数
 const history = ref<Element[][]>([]) // 历史记录栈
 const currentHistoryIndex = ref(-1) // 当前历史记录索引
 const isHistoryAction = ref(false) // 是否是历史记录操作（用于防止历史记录操作触发 watch）
 const lastSavedState = ref<string>('') // 用于比较状态是否真的改变
-
-const guidelines = ref<GuidelineInfo[]>([])
-const snapState = ref<SnapInfo[]>([])
 
 // 添加颜色常量
 const CONTAINER_GUIDELINE_COLOR = '#FF0000' // 容器辅助线颜色改为纯红色
@@ -548,10 +542,9 @@ const getElementBounds = (element: Element, index: number): DOMRect | null => {
 // 检查并生成对齐辅助线
 const checkAlignment = (currentIndex: number) => {
   if (!draggedElement.value) return []
-  if (!showGuidelines.value) return [] // 如果辅助线关闭，直接返回空数组
+  if (!assistStore.showGuidelines) return [] // 使用 store 中的状态
 
-  guidelines.value = []
-  snapState.value = []
+  assistStore.clearGuidelines()  // 使用 store 中的方法
   const currentElement = elements.value[currentIndex]
   const currentBounds = getElementBounds(currentElement, currentIndex)
   const container = canvasContainer.value
@@ -562,20 +555,19 @@ const checkAlignment = (currentIndex: number) => {
   const containerCenterX = containerWidth / 2
   const containerCenterY = containerHeight / 2
 
-  // 检查与容器中心的对齐
   const elementCenterX = currentBounds.left + currentBounds.width / 2
   const elementCenterY = currentBounds.top + currentBounds.height / 2
 
   // 检查水平中心对齐
-  if (Math.abs(elementCenterX - containerCenterX) < SNAP_THRESHOLD) {
-    guidelines.value.push({
+  if (Math.abs(elementCenterX - containerCenterX) < assistStore.SNAP_THRESHOLD) {
+    assistStore.guidelines.push({
       position: containerCenterX,
       type: 'vertical',
-      color: CONTAINER_GUIDELINE_COLOR,
+      color: assistStore.CONTAINER_GUIDELINE_COLOR,
       source: 'container',
     })
-    if (enableSnapping.value) {
-      snapState.value.push({
+    if (assistStore.enableSnapping) {
+      assistStore.snapState.push({
         isSnapped: true,
         position: containerCenterX - currentBounds.width / 2,
         type: 'vertical',
@@ -584,15 +576,15 @@ const checkAlignment = (currentIndex: number) => {
   }
 
   // 检查垂直中心对齐
-  if (Math.abs(elementCenterY - containerCenterY) < SNAP_THRESHOLD) {
-    guidelines.value.push({
+  if (Math.abs(elementCenterY - containerCenterY) < assistStore.SNAP_THRESHOLD) {
+    assistStore.guidelines.push({
       position: containerCenterY,
       type: 'horizontal',
-      color: CONTAINER_GUIDELINE_COLOR,
+      color: assistStore.CONTAINER_GUIDELINE_COLOR,
       source: 'container',
     })
-    if (enableSnapping.value) {
-      snapState.value.push({
+    if (assistStore.enableSnapping) {
+      assistStore.snapState.push({
         isSnapped: true,
         position: containerCenterY - currentBounds.height / 2,
         type: 'horizontal',
@@ -624,14 +616,14 @@ const checkAlignment = (currentIndex: number) => {
 
     verticalAlignments.forEach(({ current, target }) => {
       if (Math.abs(current - target) < SNAP_THRESHOLD) {
-        guidelines.value.push({
+        assistStore.guidelines.push({
           position: target,
           type: 'vertical',
           color: elementColor,
           source: element.id,
         })
-        if (enableSnapping.value) {
-          snapState.value.push({
+        if (assistStore.enableSnapping) {
+          assistStore.snapState.push({
             isSnapped: true,
             position: target - (current - parseInt(currentElement.style.left)),
             type: 'vertical',
@@ -656,14 +648,14 @@ const checkAlignment = (currentIndex: number) => {
 
     horizontalAlignments.forEach(({ current, target }) => {
       if (Math.abs(current - target) < SNAP_THRESHOLD) {
-        guidelines.value.push({
+        assistStore.guidelines.push({
           position: target,
           type: 'horizontal',
           color: elementColor,
           source: element.id,
         })
-        if (enableSnapping.value) {
-          snapState.value.push({
+        if (assistStore.enableSnapping) {
+          assistStore.snapState.push({
             isSnapped: true,
             position: target - (current - parseInt(currentElement.style.top)),
             type: 'horizontal',
@@ -673,7 +665,7 @@ const checkAlignment = (currentIndex: number) => {
     })
   })
 
-  return snapState.value
+  return assistStore.snapState
 }
 
 // 添加历史记录
@@ -1006,7 +998,7 @@ const onDrag = (event: MouseEvent) => {
 const stopDrag = () => {
   if (isDragging.value) {
     isDragging.value = false
-    guidelines.value = []
+    assistStore.clearGuidelines()
 
     // 更新被拖拽元素的中心点
     if (draggedElement.value !== null) {
@@ -1451,15 +1443,15 @@ onMounted(() => {
   }
 
   // 确保初始状态的一致性
-  if (enableSnapping.value && !showGuidelines.value) {
-    showGuidelines.value = true
+  if (assistStore.enableSnapping && !assistStore.showGuidelines) {
+    assistStore.showGuidelines = true
   }
-  if (!showGuidelines.value && enableSnapping.value) {
-    enableSnapping.value = false
+  if (!assistStore.showGuidelines && assistStore.enableSnapping) {
+    assistStore.enableSnapping = false
   }
 
   // 从 localStorage 恢复边界线显示状态
-  showOtherBoundaries.value = localStorage.getItem('emoji-maker-show-boundaries') === 'true'
+  assistStore.showOtherBoundaries = localStorage.getItem('emoji-maker-show-boundaries') === 'true'
 
   window.addEventListener('mousemove', onDrag)
   window.addEventListener('mouseup', stopDrag)
@@ -1528,43 +1520,6 @@ const toggleVisibility = (index: number, event: Event) => {
   const element = elements.value[index]
   element.isVisible = element.isVisible === undefined ? false : !element.isVisible
 }
-
-const toggleGuidelines = () => {
-  showGuidelines.value = !showGuidelines.value
-  // 如果关闭辅助线，同时关闭吸附功能
-  if (!showGuidelines.value) {
-    enableSnapping.value = false
-  }
-}
-
-const toggleSnapping = () => {
-  enableSnapping.value = !enableSnapping.value
-  // 如果开启吸附功能，同时开启辅助线
-  if (enableSnapping.value) {
-    showGuidelines.value = true
-  }
-}
-
-const toggleOtherBoundaries = () => {
-  showOtherBoundaries.value = !showOtherBoundaries.value
-  localStorage.setItem('emoji-maker-show-boundaries', showOtherBoundaries.value.toString())
-}
-
-// 监听辅助线状态变化
-watch(showGuidelines, (newValue) => {
-  if (!newValue) {
-    // 如果辅助线被关闭，清除所有辅助线
-    guidelines.value = []
-  }
-  // 保存状态到 localStorage
-  localStorage.setItem(GUIDELINES_STORAGE_KEY, newValue.toString())
-})
-
-// 监听吸附功能状态变化
-watch(enableSnapping, (newValue) => {
-  // 保存状态到 localStorage
-  localStorage.setItem(SNAPPING_STORAGE_KEY, newValue.toString())
-})
 
 const initializeElementStyle = (element: any) => {
   if (!element || typeof element !== 'object') {
