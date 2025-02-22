@@ -31,9 +31,9 @@
         </div>
 
         <div class="setting-item">
-          <label>{{ t('editor.quality') }}</label>
+          <label>{{ t('editor.exportSize') }}</label>
           <div class="quality-setting">
-            <select v-model="exportStore.settings.quality">
+            <select v-model="exportStore.settings.exportSize">
               <option value="0.5">0.5x</option>
               <option value="1">1x</option>
               <option value="1.5">1.5x</option>
@@ -94,7 +94,7 @@ const handleExport = async () => {
 watch(
   () => [
     exportStore.settings.format,
-    exportStore.settings.quality
+    exportStore.settings.exportSize
   ],
   () => {
     if (props.container) {
@@ -199,11 +199,12 @@ onMounted(() => {
 
 .color-setting {
   display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
 .color-setting select {
-  flex: 1;
+  width: 100%;
 }
 
 .preview-info {
@@ -221,17 +222,24 @@ onMounted(() => {
 .preview-thumbnail {
   width: 40px;
   height: 40px;
-  background: white;
   border-radius: 4px;
   overflow: hidden;
   flex-shrink: 0;
   border: 1px solid #ddd;
+  background-image: linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+    linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+    linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+  background-size: 10px 10px;
+  background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
+  background-color: white;
 }
 
 .preview-thumbnail img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  display: block;
 }
 
 .preview-details {

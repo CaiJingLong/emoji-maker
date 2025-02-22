@@ -5,14 +5,14 @@ import html2canvas from 'html2canvas'
 // 导出格式类型
 type ExportFormat = 'png' | 'jpeg' | 'webp'
 type BackgroundType = 'transparent' | 'color'
-type Quality = '0.5' | '1' | '1.5' | '2' | '3' | '4' | '6' | '8'
+type ExportSize = '0.5' | '1' | '1.5' | '2' | '3' | '4' | '6' | '8'
 
 // 导出设置接口
 interface ExportSettings {
   format: ExportFormat
   bgType: BackgroundType
   bgColor: string
-  quality: Quality
+  exportSize: ExportSize
 }
 
 // 预览信息接口
@@ -28,7 +28,7 @@ export const useExportStore = defineStore('export', () => {
     format: 'png',
     bgType: 'transparent',
     bgColor: 'rgba(255, 255, 255, 1)',
-    quality: '2'
+    exportSize: '2'
   })
   const previewInfo = ref<PreviewInfo>({
     size: '',
@@ -54,7 +54,7 @@ export const useExportStore = defineStore('export', () => {
     try {
       const canvas = await html2canvas(container, {
         backgroundColor: settings.value.bgType === 'transparent' ? null : settings.value.bgColor,
-        scale: Number(settings.value.quality)
+        scale: Number(settings.value.exportSize)
       })
 
       // 更新尺寸信息
@@ -122,7 +122,7 @@ export const useExportStore = defineStore('export', () => {
       // 导出图片
       const canvas = await html2canvas(container, {
         backgroundColor: settings.value.bgType === 'transparent' ? null : settings.value.bgColor,
-        scale: Number(settings.value.quality)
+        scale: Number(settings.value.exportSize)
       })
 
       // 恢复辅助性元素
@@ -136,7 +136,7 @@ export const useExportStore = defineStore('export', () => {
       })
 
       // 处理导出
-      const dataUrl = canvas.toDataURL(`image/${settings.value.format}`, Number(settings.value.quality))
+      const dataUrl = canvas.toDataURL(`image/${settings.value.format}`, Number(settings.value.exportSize))
       const link = document.createElement('a')
       link.download = `emoji-${Date.now()}.${settings.value.format}`
       link.href = dataUrl

@@ -41,7 +41,7 @@ const en = {
     exportBackgroundColor: 'Export Background Color',
     transparent: 'Transparent',
     solidColor: 'Solid Color',
-    quality: 'Quality',
+    exportSize: 'Export Size',
     estimatedSize: 'Estimated Size',
     dimensions: 'Dimensions',
     calculating: 'Calculating',

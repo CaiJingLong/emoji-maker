@@ -41,7 +41,7 @@ const zh = {
     exportBackgroundColor: '导出背景颜色',
     transparent: '透明',
     solidColor: '纯色',
-    quality: '图片质量',
+    exportSize: '导出尺寸',
     estimatedSize: '预计文件大小',
     dimensions: '图片尺寸',
     calculating: '正在计算',
