@@ -423,77 +423,16 @@
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useLanguageStore } from '../stores/language'
 import { useAssistStore } from '../stores/assistStore'
+import { usePersistStore, type Element } from '../stores/persistStore'
 import ExportDialog from './ExportDialog.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
 import ColorPicker from './ColorPicker.vue'
 
 const { t } = useLanguageStore()
 const assistStore = useAssistStore()
-
-interface Element {
-  type: 'image' | 'text'
-  content: string
-  id: number
-  style: {
-    left: string
-    top: string
-    position: 'absolute'
-    transform?: string
-    fontSize?: string
-    color?: string
-    width?: string
-    height?: string
-    rotate?: string
-    borderStyle?: string
-    opacity?: string
-    backgroundColor?: string
-    padding?: string
-  }
-  isEditing?: boolean
-  isVisible?: boolean
-  initialCenter?: { x: number; y: number }
-}
-
-// 对齐辅助线接口
-interface GuidelineInfo {
-  position: number
-  type: 'horizontal' | 'vertical'
-  color: string
-  source: 'container' | number
-}
-
-// 添加吸附状态接口
-interface SnapInfo {
-  isSnapped: boolean
-  position: number
-  type: 'horizontal' | 'vertical'
-}
-
-const STORAGE_KEY = 'emoji-maker-elements'
-const GUIDELINES_STORAGE_KEY = 'emoji-maker-guidelines'
-const SNAPPING_STORAGE_KEY = 'emoji-maker-snapping'
-const SNAP_THRESHOLD = 10 // 吸附阈值（像素）
-
-const fileInput = ref<HTMLInputElement | null>(null)
-const canvasContainer = ref<HTMLDivElement | null>(null)
-const elements = ref<Element[]>([])
-const draggedElement = ref<{ index: number; startX: number; startY: number } | null>(null)
-const selectedIndex = ref<number | null>(null)
-const selectedElement = computed(() =>
-  selectedIndex.value !== null ? elements.value[selectedIndex.value] : null,
-)
-const showExportDialog = ref(false)
-const isDragging = ref(false)
-
-// 历史记录相关的状态
-const MAX_HISTORY = 50 // 最大历史记录数
-const history = ref<Element[][]>([]) // 历史记录栈
-const currentHistoryIndex = ref(-1) // 当前历史记录索引
-const isHistoryAction = ref(false) // 是否是历史记录操作（用于防止历史记录操作触发 watch）
-const lastSavedState = ref<string>('') // 用于比较状态是否真的改变
+const persistStore = usePersistStore()
 
 // 添加颜色常量
-const CONTAINER_GUIDELINE_COLOR = '#FF0000' // 容器辅助线颜色改为纯红色
 const ELEMENT_COLORS = [
   '#00FF00', // 鲜绿色
   '#0000FF', // 纯蓝色
@@ -507,6 +446,17 @@ const ELEMENT_COLORS = [
   '#4169E1', // 皇家蓝
 ]
 
+const fileInput = ref<HTMLInputElement | null>(null)
+const canvasContainer = ref<HTMLDivElement | null>(null)
+const elements = ref<Element[]>([])
+const draggedElement = ref<{ index: number; startX: number; startY: number } | null>(null)
+const selectedIndex = ref<number | null>(null)
+const selectedElement = computed(() =>
+  selectedIndex.value !== null ? elements.value[selectedIndex.value] : null,
+)
+const showExportDialog = ref(false)
+const isDragging = ref(false)
+
 // 添加手风琴状态控制
 const isLayersExpanded = ref(true)
 const isEditAssistExpanded = ref(true)
@@ -519,216 +469,13 @@ const toggleEditAssist = () => {
   isEditAssistExpanded.value = !isEditAssistExpanded.value
 }
 
-// 计算元素的边界框
-const getElementBounds = (element: Element, index: number): DOMRect | null => {
-  const el = document.querySelector(`.draggable-element:nth-child(${index + 1})`) as HTMLElement
-  const container = canvasContainer.value
-  if (!el || !container) return null
-
-  const elRect = el.getBoundingClientRect()
-  const containerRect = container.getBoundingClientRect()
-  const computedStyle = window.getComputedStyle(el)
-  const borderWidth = parseInt(computedStyle.borderWidth) || 0
-
-  // 计算相对于容器的位置，修正边框宽度的补偿方向
-  return new DOMRect(
-    elRect.left - containerRect.left - borderWidth,
-    elRect.top - containerRect.top - borderWidth,
-    elRect.width,
-    elRect.height,
-  )
-}
-
-// 检查并生成对齐辅助线
-const checkAlignment = (currentIndex: number) => {
-  if (!draggedElement.value) return []
-  if (!assistStore.showGuidelines) return [] // 使用 store 中的状态
-
-  assistStore.clearGuidelines()  // 使用 store 中的方法
-  const currentElement = elements.value[currentIndex]
-  const currentBounds = getElementBounds(currentElement, currentIndex)
-  const container = canvasContainer.value
-  if (!currentBounds || !container) return []
-
-  const containerWidth = container.offsetWidth
-  const containerHeight = container.offsetHeight
-  const containerCenterX = containerWidth / 2
-  const containerCenterY = containerHeight / 2
-
-  const elementCenterX = currentBounds.left + currentBounds.width / 2
-  const elementCenterY = currentBounds.top + currentBounds.height / 2
-
-  // 检查水平中心对齐
-  if (Math.abs(elementCenterX - containerCenterX) < assistStore.SNAP_THRESHOLD) {
-    assistStore.guidelines.push({
-      position: containerCenterX,
-      type: 'vertical',
-      color: assistStore.CONTAINER_GUIDELINE_COLOR,
-      source: 'container',
-    })
-    if (assistStore.enableSnapping) {
-      assistStore.snapState.push({
-        isSnapped: true,
-        position: containerCenterX - currentBounds.width / 2,
-        type: 'vertical',
-      })
-    }
-  }
-
-  // 检查垂直中心对齐
-  if (Math.abs(elementCenterY - containerCenterY) < assistStore.SNAP_THRESHOLD) {
-    assistStore.guidelines.push({
-      position: containerCenterY,
-      type: 'horizontal',
-      color: assistStore.CONTAINER_GUIDELINE_COLOR,
-      source: 'container',
-    })
-    if (assistStore.enableSnapping) {
-      assistStore.snapState.push({
-        isSnapped: true,
-        position: containerCenterY - currentBounds.height / 2,
-        type: 'horizontal',
-      })
-    }
-  }
-
-  elements.value.forEach((element, index) => {
-    if (index === currentIndex || element.isVisible === false) return
-
-    const bounds = getElementBounds(element, index)
-    if (!bounds) return
-
-    const elementColor = ELEMENT_COLORS[element.id % ELEMENT_COLORS.length]
-
-    // 检查垂直对齐
-    const verticalAlignments = [
-      { current: currentBounds.left, target: bounds.left }, // 左对齐
-      { current: currentBounds.right, target: bounds.right }, // 右对齐
-      {
-        current: currentBounds.left + currentBounds.width / 2,
-        target: bounds.left + bounds.width / 2,
-      }, // 中心对齐
-      { current: currentBounds.right, target: bounds.left }, // 右边缘对左边缘
-      { current: currentBounds.left, target: bounds.right }, // 左边缘对右边缘
-      { current: currentBounds.left, target: bounds.right + SNAP_THRESHOLD }, // 水平等间距
-      { current: currentBounds.right, target: bounds.left - SNAP_THRESHOLD }, // 水平等间距
-    ]
-
-    verticalAlignments.forEach(({ current, target }) => {
-      if (Math.abs(current - target) < SNAP_THRESHOLD) {
-        assistStore.guidelines.push({
-          position: target,
-          type: 'vertical',
-          color: elementColor,
-          source: element.id,
-        })
-        if (assistStore.enableSnapping) {
-          assistStore.snapState.push({
-            isSnapped: true,
-            position: target - (current - parseInt(currentElement.style.left)),
-            type: 'vertical',
-          })
-        }
-      }
-    })
-
-    // 检查水平对齐
-    const horizontalAlignments = [
-      { current: currentBounds.top, target: bounds.top }, // 顶部对齐
-      { current: currentBounds.bottom, target: bounds.bottom }, // 底部对齐
-      {
-        current: currentBounds.top + currentBounds.height / 2,
-        target: bounds.top + bounds.height / 2,
-      }, // 中心对齐
-      { current: currentBounds.bottom, target: bounds.top }, // 底边缘对顶边缘
-      { current: currentBounds.top, target: bounds.bottom }, // 顶边缘对底边缘
-      { current: currentBounds.top, target: bounds.bottom + SNAP_THRESHOLD }, // 垂直等间距
-      { current: currentBounds.bottom, target: bounds.top - SNAP_THRESHOLD }, // 垂直等间距
-    ]
-
-    horizontalAlignments.forEach(({ current, target }) => {
-      if (Math.abs(current - target) < SNAP_THRESHOLD) {
-        assistStore.guidelines.push({
-          position: target,
-          type: 'horizontal',
-          color: elementColor,
-          source: element.id,
-        })
-        if (assistStore.enableSnapping) {
-          assistStore.snapState.push({
-            isSnapped: true,
-            position: target - (current - parseInt(currentElement.style.top)),
-            type: 'horizontal',
-          })
-        }
-      }
-    })
-  })
-
-  return assistStore.snapState
-}
-
-// 添加历史记录
-const addHistory = () => {
-  if (isHistoryAction.value || isDragging.value) return
-
-  const currentState = JSON.stringify(elements.value)
-  if (currentState === lastSavedState.value) return // 如果状态没有真正改变，不添加历史记录
-
-  // 如果当前不在最新状态，删除当前位置之后的历史记录
-  if (currentHistoryIndex.value < history.value.length - 1) {
-    history.value = history.value.slice(0, currentHistoryIndex.value + 1)
-  }
-
-  // 添加新的历史记录
-  history.value.push(JSON.parse(JSON.stringify(elements.value)))
-  currentHistoryIndex.value = history.value.length - 1
-  lastSavedState.value = currentState
-
-  // 如果历史记录超过最大数量，删除最早的记录
-  if (history.value.length > MAX_HISTORY) {
-    history.value.shift()
-    currentHistoryIndex.value--
-  }
-}
-
-// 撤销
-const undo = () => {
-  if (currentHistoryIndex.value > 0) {
-    isHistoryAction.value = true
-    currentHistoryIndex.value--
-    elements.value = JSON.parse(JSON.stringify(history.value[currentHistoryIndex.value]))
-    lastSavedState.value = JSON.stringify(elements.value)
-    isHistoryAction.value = false
-  }
-}
-
-// 重做
-const redo = () => {
-  if (currentHistoryIndex.value < history.value.length - 1) {
-    isHistoryAction.value = true
-    currentHistoryIndex.value++
-    elements.value = JSON.parse(JSON.stringify(history.value[currentHistoryIndex.value]))
-    lastSavedState.value = JSON.stringify(elements.value)
-    isHistoryAction.value = false
-  }
-}
-
 // 监听 elements 变化并保存到 localStorage
 watch(
   elements,
   (newElements) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newElements))
-  },
-  { deep: true },
-)
-
-// 监听 elements 变化，自动添加历史记录
-watch(
-  elements,
-  () => {
-    if (!isHistoryAction.value) {
-      addHistory()
+    persistStore.saveElements(newElements)
+    if (!isDragging.value) {
+      persistStore.addHistory(newElements)
     }
   },
   { deep: true },
@@ -736,45 +483,7 @@ watch(
 
 // 从 localStorage 恢复数据
 const restoreData = () => {
-  const savedData = localStorage.getItem(STORAGE_KEY)
-  if (savedData) {
-    try {
-      const loadedElements = JSON.parse(savedData)
-      // 验证数据格式是否正确
-      if (!Array.isArray(loadedElements)) {
-        console.error('恢复数据失败: 数据格式不正确')
-        return
-      }
-
-      elements.value = loadedElements.map(element => {
-        // 验证元素格式是否正确
-        if (typeof element !== 'object' || !element) {
-          console.error('跳过无效元素:', element)
-          return null
-        }
-
-        // 确保基本属性存在
-        const validElement = {
-          type: element.type || 'text',
-          content: element.content || '',
-          id: element.id || 0,
-          style: element.style || {},
-          isEditing: false,
-          initialCenter: element.initialCenter || {
-            x: 200,
-            y: 200
-          }
-        }
-
-        return initializeElementStyle(validElement)
-      }).filter(element => element !== null) // 过滤掉无效元素
-    } catch (error) {
-      console.error('恢复数据失败:', error)
-      // 如果恢复失败，清空本地存储并初始化为空数组
-      localStorage.removeItem(STORAGE_KEY)
-      elements.value = []
-    }
-  }
+  elements.value = persistStore.loadElements()
 }
 
 const handleImageUpload = () => {
@@ -792,7 +501,7 @@ const onFileSelected = (event: Event) => {
             elements.value.length > 0 ? Math.max(...elements.value.map((el) => el.id)) + 1 : 0
           const containerWidth = canvasContainer.value?.offsetWidth || 400
           const containerHeight = canvasContainer.value?.offsetHeight || 400
-          const element = initializeElementStyle({
+          const element: Element = {
             type: 'image',
             content: e.target.result as string,
             id: newId,
@@ -809,12 +518,100 @@ const onFileSelected = (event: Event) => {
               x: Math.round(containerWidth / 2),
               y: Math.round(containerHeight / 2),
             },
-          })
+          }
           elements.value.push(element)
         }
       }
       reader.readAsDataURL(file)
     })
+  }
+}
+
+// 添加元素到画布
+const addElementToCanvas = (element: Partial<Element>) => {
+  const newId = elements.value.length > 0 ? Math.max(...elements.value.map((el) => el.id)) + 1 : 0
+  const containerWidth = canvasContainer.value?.offsetWidth || 400
+  const containerHeight = canvasContainer.value?.offsetHeight || 400
+
+  const newElement: Element = {
+    type: element.type || 'text',
+    content: element.content || '',
+    id: newId,
+    style: {
+      left: '50%',
+      top: '50%',
+      position: 'absolute',
+      transform: 'translate(-50%, -50%)',
+      fontSize: element.style?.fontSize || '16px',
+      color: element.style?.color || '#000000',
+      width: element.style?.width || 'auto',
+      height: element.style?.height || 'auto',
+      rotate: element.style?.rotate || '0deg',
+      opacity: element.style?.opacity || '1',
+      borderStyle: element.style?.borderStyle || 'none',
+      backgroundColor: element.style?.backgroundColor || 'transparent',
+      padding: element.style?.padding || '0px'
+    },
+    initialCenter: {
+      x: Math.round(containerWidth / 2),
+      y: Math.round(containerHeight / 2),
+    },
+  }
+
+  elements.value.push(newElement)
+  selectedIndex.value = elements.value.length - 1
+}
+
+// 处理粘贴事件
+const handlePaste = async (event: Event) => {
+  try {
+    const clipboardItems = await navigator.clipboard.read()
+    for (const clipboardItem of clipboardItems) {
+      // 优先处理图片
+      for (const type of clipboardItem.types) {
+        if (type.startsWith('image/')) {
+          const blob = await clipboardItem.getType(type)
+          const reader = new FileReader()
+          reader.onload = (e) => {
+            if (e.target?.result) {
+              addElementToCanvas({
+                type: 'image',
+                content: e.target.result as string,
+                style: {
+                  left: '50%',
+                  top: '50%',
+                  position: 'absolute',
+                  width: '200px',
+                  height: 'auto'
+                }
+              })
+            }
+          }
+          reader.readAsDataURL(blob)
+          return
+        }
+      }
+      // 如果没有图片，尝试读取文本
+      if (clipboardItem.types.includes('text/plain')) {
+        const text = await clipboardItem.getType('text/plain')
+        const textContent = await text.text()
+        if (textContent.trim()) {
+          addElementToCanvas({
+            type: 'text',
+            content: textContent,
+            style: {
+              left: '50%',
+              top: '50%',
+              position: 'absolute',
+              fontSize: '24px',
+              color: '#000000'
+            }
+          })
+        }
+      }
+    }
+  } catch (error) {
+    console.debug('剪贴板访问被拒绝或不可用')
   }
 }
 
@@ -968,10 +765,10 @@ const onDrag = (event: MouseEvent) => {
   if (verticalSnap?.isSnapped) {
     const snapX = verticalSnap.position
     const diff = Math.abs(targetX - snapX)
-    if (diff <= SNAP_THRESHOLD) {
+    if (diff <= assistStore.SNAP_THRESHOLD) {
       finalX = snapX
-    } else if (diff <= SNAP_THRESHOLD * 2) {
-      const t = Math.pow((diff - SNAP_THRESHOLD) / SNAP_THRESHOLD, 2)
+    } else if (diff <= assistStore.SNAP_THRESHOLD * 2) {
+      const t = Math.pow((diff - assistStore.SNAP_THRESHOLD) / assistStore.SNAP_THRESHOLD, 2)
       finalX = snapX + (targetX - snapX) * t
     }
   }
@@ -981,10 +778,10 @@ const onDrag = (event: MouseEvent) => {
   if (horizontalSnap?.isSnapped) {
     const snapY = horizontalSnap.position
     const diff = Math.abs(targetY - snapY)
-    if (diff <= SNAP_THRESHOLD) {
+    if (diff <= assistStore.SNAP_THRESHOLD) {
       finalY = snapY
-    } else if (diff <= SNAP_THRESHOLD * 2) {
-      const t = Math.pow((diff - SNAP_THRESHOLD) / SNAP_THRESHOLD, 2)
+    } else if (diff <= assistStore.SNAP_THRESHOLD * 2) {
+      const t = Math.pow((diff - assistStore.SNAP_THRESHOLD) / assistStore.SNAP_THRESHOLD, 2)
       finalY = snapY + (targetY - snapY) * t
     }
   }
@@ -1018,7 +815,7 @@ const stopDrag = () => {
       }
     }
 
-    addHistory()
+    persistStore.addHistory(elements.value)
   }
   draggedElement.value = null
 }
@@ -1146,122 +943,37 @@ const updateBorderStyle = (event: Event) => {
 }
 
 const handleKeyDown = (event: KeyboardEvent) => {
-  // 忽略单独的修饰键事件
-  if (['Control', 'Shift', 'Alt', 'Meta'].includes(event.key)) {
-    return
-  }
+  // 如果正在编辑文本，不处理快捷键
+  if (selectedElement.value?.isEditing) return
 
-  // 检查是否有正在编辑的文字元素
-  const hasEditingText = elements.value.some(
-    (element) => element.type === 'text' && element.isEditing,
-  )
-
-  // 如果正在编辑文字，不处理快捷键
-  if (hasEditingText) return
-
-  // 处理删除键
-  if (selectedIndex.value !== null && (event.key === 'Delete' || event.key === 'Backspace')) {
-    deleteElement(selectedIndex.value)
-  }
-
-  // 处理撤销快捷键 (Ctrl+Z / Command+Z)
-  if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
-    event.preventDefault()
-    undo()
-  }
-
-  // 处理重做快捷键 (Ctrl+Y / Command+Y 或 Ctrl+Shift+Z / Command+Shift+Z)
-  if (
-    (event.ctrlKey || event.metaKey) &&
-    ((event.key.toLowerCase() === 'y' && !event.shiftKey) ||
-      (event.key.toLowerCase() === 'z' && event.shiftKey))
-  ) {
-    event.preventDefault()
-    redo()
-  }
-
-  // 处理粘贴快捷键 (Ctrl+V / Command+V)
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
-    event.preventDefault()
-    // 使用 try-catch 包装剪贴板操作
-    try {
-      navigator.clipboard.read().then(async (clipboardItems) => {
-        for (const clipboardItem of clipboardItems) {
-          // 优先处理图片
-          for (const type of clipboardItem.types) {
-            if (type.startsWith('image/')) {
-              const blob = await clipboardItem.getType(type)
-              const reader = new FileReader()
-              reader.onload = (e) => {
-                if (e.target?.result) {
-                  addElementToCanvas({
-                    type: 'image',
-                    content: e.target.result as string,
-                    style: {
-                      width: '200px',
-                      height: 'auto'
-                    }
-                  })
-                }
-              }
-              reader.readAsDataURL(blob)
-              return
-            }
+  // 处理快捷键
+  if (event.ctrlKey || event.metaKey) {
+    switch (event.key.toLowerCase()) {
+      case 'z':
+        event.preventDefault()
+        if (event.shiftKey) {
+          const redoResult = persistStore.redo()
+          if (redoResult) {
+            elements.value = redoResult
           }
-          // 如果没有图片，尝试读取文本
-          if (clipboardItem.types.includes('text/plain')) {
-            const text = await clipboardItem.getType('text/plain')
-            const textContent = await text.text()
-            if (textContent.trim()) {
-              addElementToCanvas({
-                type: 'text',
-                content: textContent,
-                style: {
-                  fontSize: '24px',
-                  color: '#000000'
-                }
-              })
-            }
+        } else {
+          const undoResult = persistStore.undo()
+          if (undoResult) {
+            elements.value = undoResult
           }
         }
-      }).catch(() => {
-        // 忽略剪贴板错误
-      })
-    } catch (error) {
-      // 忽略任何剪贴板相关的错误
-      console.debug('剪贴板访问被拒绝或不可用')
+        break
+      case 'v':
+        event.preventDefault()
+        handlePaste(event)
+        break
+    }
+  } else if (event.key === 'Delete' || event.key === 'Backspace') {
+    if (selectedIndex.value !== null) {
+      event.preventDefault()
+      deleteElement(selectedIndex.value)
     }
   }
-}
-
-// 添加一个新的辅助函数来处理元素添加
-const addElementToCanvas = (elementData: { type: 'text' | 'image', content: string, style: Record<string, string> }) => {
-  const newId = elements.value.length > 0 ? Math.max(...elements.value.map((el) => el.id)) + 1 : 0
-
-  // 从样式中获取位置信息
-  const left = elementData.style.left || '50%'
-  const top = elementData.style.top || '50%'
-
-  const element = initializeElementStyle({
-    type: elementData.type,
-    content: elementData.content,
-    id: newId,
-    style: {
-      left,
-      top,
-      position: 'absolute',
-      transform: 'translate(-50%, -50%)',
-      rotate: '0deg',
-      borderStyle: 'none',
-      ...elementData.style
-    },
-    isEditing: false,
-    initialCenter: {
-      x: parseInt(left),
-      y: parseInt(top)
-    },
-  })
-  elements.value.push(element)
 }
 
 const updateOpacity = (event: Event) => {
@@ -1352,7 +1064,7 @@ const showConfirmDialog = ref(false)
 const clearAllElements = () => {
   elements.value = []
   selectedIndex.value = null
-  addHistory()
+  persistStore.addHistory(elements.value)
 }
 
 // 处理外部拖放的悬停效果
@@ -1405,7 +1117,8 @@ const handleExternalDrop = async (event: DragEvent) => {
                 height: 'auto',
                 left: `${dropX}px`,
                 top: `${dropY}px`,
-                transform: 'translate(-50%, -50%)'
+                transform: 'translate(-50%, -50%)',
+                position: 'absolute'
               }
             })
           }
@@ -1427,7 +1140,8 @@ const handleExternalDrop = async (event: DragEvent) => {
         color: '#000000',
         left: `${dropX}px`,
         top: `${dropY}px`,
-        transform: 'translate(-50%, -50%)'
+        transform: 'translate(-50%, -50%)',
+        position: 'absolute'
       }
     })
   }
@@ -1436,10 +1150,7 @@ const handleExternalDrop = async (event: DragEvent) => {
 onMounted(() => {
   restoreData()
   if (elements.value.length > 0) {
-    const initialState = JSON.stringify(elements.value)
-    history.value = [JSON.parse(initialState)]
-    currentHistoryIndex.value = 0
-    lastSavedState.value = initialState
+    persistStore.initHistory(elements.value)
   }
 
   // 确保初始状态的一致性
@@ -1506,7 +1217,7 @@ const dropElement = (event: DragEvent, index: number) => {
         })
 
         selectedIndex.value = index
-        addHistory()
+        persistStore.addHistory(elements.value)
       }
     } catch (e) {
       console.error('Invalid drag data')
@@ -1619,6 +1330,155 @@ const getImageNumber = (index: number): string => {
   // 当前是第几个图片 + 1（因为要从1开始）
   return `#${previousImages.length + 1}`;
 };
+
+// 计算元素的边界框
+const getElementBounds = (element: Element, index: number): DOMRect | null => {
+  const el = document.querySelector(`.draggable-element:nth-child(${index + 1})`) as HTMLElement
+  const container = canvasContainer.value
+  if (!el || !container) return null
+
+  const elRect = el.getBoundingClientRect()
+  const containerRect = container.getBoundingClientRect()
+  const computedStyle = window.getComputedStyle(el)
+  const borderWidth = parseInt(computedStyle.borderWidth) || 0
+
+  // 计算相对于容器的位置，修正边框宽度的补偿方向
+  return new DOMRect(
+    elRect.left - containerRect.left - borderWidth,
+    elRect.top - containerRect.top - borderWidth,
+    elRect.width,
+    elRect.height,
+  )
+}
+
+// 检查并生成对齐辅助线
+const checkAlignment = (currentIndex: number) => {
+  if (!draggedElement.value) return []
+  if (!assistStore.showGuidelines) return []
+
+  assistStore.clearGuidelines()
+  const currentElement = elements.value[currentIndex]
+  const currentBounds = getElementBounds(currentElement, currentIndex)
+  const container = canvasContainer.value
+  if (!currentBounds || !container) return []
+
+  const containerWidth = container.offsetWidth
+  const containerHeight = container.offsetHeight
+  const containerCenterX = containerWidth / 2
+  const containerCenterY = containerHeight / 2
+
+  const elementCenterX = currentBounds.left + currentBounds.width / 2
+  const elementCenterY = currentBounds.top + currentBounds.height / 2
+
+  // 检查水平中心对齐
+  if (Math.abs(elementCenterX - containerCenterX) < assistStore.SNAP_THRESHOLD) {
+    assistStore.guidelines.push({
+      position: containerCenterX,
+      type: 'vertical',
+      color: assistStore.CONTAINER_GUIDELINE_COLOR,
+      source: 'container',
+    })
+    if (assistStore.enableSnapping) {
+      assistStore.snapState.push({
+        isSnapped: true,
+        position: containerCenterX - currentBounds.width / 2,
+        type: 'vertical',
+      })
+    }
+  }
+
+  // 检查垂直中心对齐
+  if (Math.abs(elementCenterY - containerCenterY) < assistStore.SNAP_THRESHOLD) {
+    assistStore.guidelines.push({
+      position: containerCenterY,
+      type: 'horizontal',
+      color: assistStore.CONTAINER_GUIDELINE_COLOR,
+      source: 'container',
+    })
+    if (assistStore.enableSnapping) {
+      assistStore.snapState.push({
+        isSnapped: true,
+        position: containerCenterY - currentBounds.height / 2,
+        type: 'horizontal',
+      })
+    }
+  }
+
+  elements.value.forEach((element, index) => {
+    if (index === currentIndex || element.isVisible === false) return
+
+    const bounds = getElementBounds(element, index)
+    if (!bounds) return
+
+    const elementColor = ELEMENT_COLORS[element.id % ELEMENT_COLORS.length]
+
+    // 检查垂直对齐
+    const verticalAlignments = [
+      { current: currentBounds.left, target: bounds.left }, // 左对齐
+      { current: currentBounds.right, target: bounds.right }, // 右对齐
+      {
+        current: currentBounds.left + currentBounds.width / 2,
+        target: bounds.left + bounds.width / 2,
+      }, // 中心对齐
+      { current: currentBounds.right, target: bounds.left }, // 右边缘对左边缘
+      { current: currentBounds.left, target: bounds.right }, // 左边缘对右边缘
+      { current: currentBounds.left, target: bounds.right + assistStore.SNAP_THRESHOLD }, // 水平等间距
+      { current: currentBounds.right, target: bounds.left - assistStore.SNAP_THRESHOLD }, // 水平等间距
+    ]
+
+    verticalAlignments.forEach(({ current, target }) => {
+      if (Math.abs(current - target) < assistStore.SNAP_THRESHOLD) {
+        assistStore.guidelines.push({
+          position: target,
+          type: 'vertical',
+          color: elementColor,
+          source: element.id,
+        })
+        if (assistStore.enableSnapping) {
+          assistStore.snapState.push({
+            isSnapped: true,
+            position: target - (current - parseInt(currentElement.style.left)),
+            type: 'vertical',
+          })
+        }
+      }
+    })
+
+    // 检查水平对齐
+    const horizontalAlignments = [
+      { current: currentBounds.top, target: bounds.top }, // 顶部对齐
+      { current: currentBounds.bottom, target: bounds.bottom }, // 底部对齐
+      {
+        current: currentBounds.top + currentBounds.height / 2,
+        target: bounds.top + bounds.height / 2,
+      }, // 中心对齐
+      { current: currentBounds.bottom, target: bounds.top }, // 底边缘对顶边缘
+      { current: currentBounds.top, target: bounds.bottom }, // 顶边缘对底边缘
+      { current: currentBounds.top, target: bounds.bottom + assistStore.SNAP_THRESHOLD }, // 垂直等间距
+      { current: currentBounds.bottom, target: bounds.top - assistStore.SNAP_THRESHOLD }, // 垂直等间距
+    ]
+
+    horizontalAlignments.forEach(({ current, target }) => {
+      if (Math.abs(current - target) < assistStore.SNAP_THRESHOLD) {
+        assistStore.guidelines.push({
+          position: target,
+          type: 'horizontal',
+          color: elementColor,
+          source: element.id,
+        })
+        if (assistStore.enableSnapping) {
+          assistStore.snapState.push({
+            isSnapped: true,
+            position: target - (current - parseInt(currentElement.style.top)),
+            type: 'horizontal',
+          })
+        }
+      }
+    })
+  })
+
+  return assistStore.snapState
+}
 </script>
 
 <style scoped>

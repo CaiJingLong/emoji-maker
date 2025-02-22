@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
+import { usePersistStore } from './persistStore'
 
 // 常量定义
 const GUIDELINES_STORAGE_KEY = 'emoji-maker-guidelines'
@@ -23,10 +24,12 @@ export interface SnapInfo {
 }
 
 export const useAssistStore = defineStore('assist', () => {
+  const persistStore = usePersistStore()
+  
   // 状态
-  const showGuidelines = ref(localStorage.getItem(GUIDELINES_STORAGE_KEY) === 'true')
-  const enableSnapping = ref(localStorage.getItem(SNAPPING_STORAGE_KEY) === 'true')
-  const showOtherBoundaries = ref(localStorage.getItem(BOUNDARIES_STORAGE_KEY) === 'true')
+  const showGuidelines = ref(persistStore.loadGuidelinesState())
+  const enableSnapping = ref(persistStore.loadSnappingState())
+  const showOtherBoundaries = ref(persistStore.loadBoundariesState())
   const guidelines = ref<GuidelineInfo[]>([])
   const snapState = ref<SnapInfo[]>([])
 
@@ -49,7 +52,7 @@ export const useAssistStore = defineStore('assist', () => {
 
   const toggleOtherBoundaries = () => {
     showOtherBoundaries.value = !showOtherBoundaries.value
-    localStorage.setItem(BOUNDARIES_STORAGE_KEY, showOtherBoundaries.value.toString())
+    persistStore.saveBoundariesState(showOtherBoundaries.value)
   }
 
   const clearGuidelines = () => {
@@ -61,11 +64,11 @@ export const useAssistStore = defineStore('assist', () => {
     if (!newValue) {
       clearGuidelines()
     }
-    localStorage.setItem(GUIDELINES_STORAGE_KEY, newValue.toString())
+    persistStore.saveGuidelinesState(newValue)
   })
 
   watch(enableSnapping, (newValue) => {
-    localStorage.setItem(SNAPPING_STORAGE_KEY, newValue.toString())
+    persistStore.saveSnappingState(newValue)
   })
 
   // 导出常量

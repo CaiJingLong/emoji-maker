@@ -1167,5 +1167,19 @@
 3. 确认了现有的项目结构，包含了必要的配置文件
 4. 项目使用 Vue 3 + TypeScript + Vite 技术栈
 
+## 版本 87 - 2024-03-21
+
+### 需求
+- 抽取持久化存储模块，统一管理所有持久化功能
+
+### 完成事项
+1. 创建 persistStore 统一管理持久化存储
+2. 将元素数据持久化功能从 EmojiMaker 组件移到 persistStore
+3. 将历史记录管理功能从 EmojiMaker 组件移到 persistStore
+4. 将辅助功能状态持久化从 assistStore 移到 persistStore
+5. 将语言设置持久化从 languageStore 移到 persistStore
+6. 修改相关组件使用新的 persistStore
+7. 优化了代码结构，提高了可维护性
+
 # Emoji Maker 开发日志
 
