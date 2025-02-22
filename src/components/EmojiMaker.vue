@@ -1672,22 +1672,4 @@ const getImageNumber = (index: number): string => {
 @import '../styles/controlPanel.css';
 @import '../styles/textStyles.css';
 @import '../styles/animations.css';
-
-.image-icon {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  overflow: hidden;
-  background-color: #f5f5f5;
-}
-
-.thumbnail {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 2px;
-}
 </style>
