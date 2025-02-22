@@ -421,6 +421,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useLanguageStore } from '../stores/language'
 import { useAssistStore } from '../stores/assistStore'
 import { usePersistStore, type Element } from '../stores/persistStore'
@@ -428,11 +429,14 @@ import ExportDialog from './ExportDialog.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
 import ColorPicker from './ColorPicker.vue'
 import { useKeyboardStore } from '../stores/keyboardStore'
+import { useDragStore } from '../stores/dragStore'
 
 const { t } = useLanguageStore()
 const assistStore = useAssistStore()
 const persistStore = usePersistStore()
 const keyboardStore = useKeyboardStore()
+const dragStore = useDragStore()
+const { draggedElement, isDragging, isDraggingOver, isInternalDrag } = storeToRefs(dragStore)
 
 // 添加颜色常量
 const ELEMENT_COLORS = [
@@ -451,13 +455,11 @@ const ELEMENT_COLORS = [
 const fileInput = ref<HTMLInputElement | null>(null)
 const canvasContainer = ref<HTMLDivElement | null>(null)
 const elements = ref<Element[]>([])
-const draggedElement = ref<{ index: number; startX: number; startY: number } | null>(null)
 const selectedIndex = ref<number | null>(null)
 const selectedElement = computed(() =>
   selectedIndex.value !== null ? elements.value[selectedIndex.value] : null,
 )
 const showExportDialog = ref(false)
-const isDragging = ref(false)
 
 // 添加手风琴状态控制
 const isLayersExpanded = ref(true)
@@ -563,74 +565,8 @@ const addText = () => {
   })
 }
 
-const isDraggingOver = ref(false)
-const isInternalDrag = ref(false)  // 添加内部拖拽标记
-
-// 处理拖入事件
-const handleDragEnter = (event: DragEvent) => {
-  // 如果是内部拖拽，不显示拖入遮罩
-  if (isInternalDrag.value) return
-  // 如果有对话框打开，不显示拖入遮罩
-  if (showExportDialog.value || showConfirmDialog.value) return
-  event.preventDefault()
-  isDraggingOver.value = true
-  if (canvasContainer.value) {
-    canvasContainer.value.classList.add('drag-active')
-  }
-}
-
-// 处理拖离事件
-const handleDragLeave = (event: DragEvent) => {
-  if (isInternalDrag.value) return
-  event.preventDefault()
-  // 检查是否真的离开了容器
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-  const x = event.clientX
-  const y = event.clientY
-
-  if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
-    isDraggingOver.value = false
-    if (canvasContainer.value) {
-      canvasContainer.value.classList.remove('drag-active')
-    }
-  }
-}
-
 const startDrag = (event: MouseEvent | DragEvent, index?: number) => {
-  if (index === undefined) {
-    // 处理图层面板的拖拽
-    const dragEvent = event as DragEvent
-    const target = dragEvent.target as HTMLElement
-    const dragIndex = parseInt(target.getAttribute('data-index') || '0')
-    const element = elements.value[dragIndex]
-    if (element.isEditing) return
-
-    isInternalDrag.value = true  // 设置内部拖拽标记
-    const data = {
-      index: dragIndex,
-      isInternal: true,  // 添加内部拖拽标识
-      isLayerSort: true  // 添加图层排序标识
-    }
-    dragEvent.dataTransfer?.setData('text', JSON.stringify(data))
-    target.classList.add('dragging')
-  } else {
-    // 处理画布中的拖拽
-    const mouseEvent = event as MouseEvent
-    const element = elements.value[index]
-    if (element.isEditing) return
-
-    isDragging.value = true
-    // 获取外层的 draggable-element
-    const draggableElement = document.querySelector(`.draggable-element:nth-child(${index + 1})`) as HTMLElement
-    if (!draggableElement) return
-
-    const rect = draggableElement.getBoundingClientRect()
-    draggedElement.value = {
-      index,
-      startX: mouseEvent.clientX - rect.left,
-      startY: mouseEvent.clientY - rect.top,
-    }
-  }
+  dragStore.startDrag(event, index, elements, (newIndex) => selectedIndex.value = newIndex)
 }
 
 const onDrag = (event: MouseEvent) => {
@@ -714,31 +650,7 @@ const onDrag = (event: MouseEvent) => {
 }
 
 const stopDrag = () => {
-  if (isDragging.value) {
-    isDragging.value = false
-    assistStore.clearGuidelines()
-
-    // 更新被拖拽元素的中心点
-    if (draggedElement.value !== null) {
-      const index = draggedElement.value.index
-      const element = elements.value[index]
-      const containerRect = canvasContainer.value?.getBoundingClientRect()
-      const elementNode = document.querySelector(
-        `.draggable-element:nth-child(${index + 1})`
-      ) as HTMLElement
-
-      if (containerRect && elementNode) {
-        const rect = elementNode.getBoundingClientRect()
-        element.initialCenter = {
-          x: Math.round(rect.left - containerRect.left + rect.width / 2),
-          y: Math.round(rect.top - containerRect.top + rect.height / 2)
-        }
-      }
-    }
-
-    persistStore.addHistory(elements.value)
-  }
-  draggedElement.value = null
+  dragStore.stopDrag(elements, canvasContainer, assistStore.clearGuidelines, persistStore.addHistory)
 }
 
 const editText = (index: number) => {
@@ -969,13 +881,7 @@ const clearAllElements = () => {
 
 // 处理外部拖放的悬停效果
 const handleDragOver = (event: DragEvent) => {
-  event.preventDefault()
-  // 添加拖放提示样式
-  const container = canvasContainer.value
-  if (container) {
-    container.style.borderColor = '#4caf50'
-    container.style.borderStyle = 'solid'
-  }
+  dragStore.handleDragOver(event, canvasContainer)
 }
 
 // 修改现有的 handleExternalDrop 函数
@@ -1080,11 +986,7 @@ onUnmounted(() => {
 })
 
 const stopLayerDrag = (event: DragEvent) => {
-  event.preventDefault()
-  event.stopPropagation()
-  const target = event.target as HTMLElement
-  target.classList.remove('dragging')
-  isInternalDrag.value = false
+  dragStore.stopLayerDrag(event)
 }
 
 const dropElement = (event: DragEvent, index: number) => {
@@ -1378,6 +1280,14 @@ const checkAlignment = (currentIndex: number) => {
   })
 
   return assistStore.snapState
+}
+
+const handleDragEnter = (event: DragEvent) => {
+  dragStore.handleDragEnter(event, showExportDialog.value, showConfirmDialog.value, canvasContainer)
+}
+
+const handleDragLeave = (event: DragEvent) => {
+  dragStore.handleDragLeave(event, canvasContainer)
 }
 </script>
 

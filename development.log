@@ -1,5 +1,34 @@
 # Emoji Maker 开发日志
 
+## 版本 90
+
+### 需求
+- 将拖拽相关功能从 EmojiMaker 组件中抽离出来
+- 创建独立的 dragStore 来管理拖拽功能
+- 优化拖拽相关的状态管理
+- 确保拖拽功能的可维护性和复用性
+
+### 完成事项
+1. 创建了 dragStore 来统一管理所有拖拽相关的功能：
+   - 画布内元素的拖拽
+   - 图层列表的拖拽排序
+   - 外部文件的拖入
+2. 将以下状态从组件移至 store：
+   - draggedElement：当前被拖拽的元素信息
+   - isDragging：是否正在拖拽
+   - isDraggingOver：是否有元素正在拖入
+   - isInternalDrag：是否是内部拖拽
+3. 将以下方法从组件移至 store：
+   - startDrag：开始拖拽
+   - stopDrag：停止拖拽
+   - stopLayerDrag：停止图层拖拽
+   - handleDragEnter：处理拖入事件
+   - handleDragLeave：处理拖离事件
+   - handleDragOver：处理拖放悬停效果
+4. 使用 storeToRefs 确保状态的响应式
+5. 优化了代码结构，提高了可维护性
+6. 确保所有拖拽功能正常工作
+
 ## 版本 89
 
 ### 需求
