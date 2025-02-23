@@ -5,4 +5,75 @@
   50% {
     transform: translateY(-10px);
   }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scale {
+  from {
+    transform: scale(0.95);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-bounce {
+  animation: bounce var(--transition-base) ease infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--transition-base) ease forwards;
+}
+
+.animate-fade-out {
+  animation: fadeOut var(--transition-base) ease forwards;
+}
+
+.animate-slide-in {
+  animation: slideIn var(--transition-base) ease forwards;
+}
+
+.animate-scale {
+  animation: scale var(--transition-fast) ease forwards;
+}
+
+.animate-rotate {
+  animation: rotate var(--transition-base) linear infinite;
 } 

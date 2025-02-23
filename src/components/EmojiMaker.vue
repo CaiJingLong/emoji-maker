@@ -12,91 +12,17 @@
       </div>
     </div>
     <div class="side-panel">
-      <div class="accordion-item">
-        <div class="accordion-header" @click="toggleLayers">
-          <h3>{{ t('app.layers') }}</h3>
-          <span class="accordion-icon" :class="{ 'is-expanded': isLayersExpanded }">▼</span>
-        </div>
-        <div class="accordion-content" :class="{ 'is-expanded': isLayersExpanded }">
-          <ul class="layer-list"
-            @dragover.prevent.stop
-            @drop.prevent.stop
-            @dragenter.prevent.stop
-            @dragleave.prevent.stop
-          >
-            <li
-              v-for="(element, index) in elements"
-              :key="index"
-              :data-index="index"
-              class="layer-item"
-              :class="{
-                selected: selectedIndex === index,
-                hidden: element.isVisible === false,
-              }"
-              @click.stop="selectElement(index)"
-              @contextmenu.prevent.stop="showContextMenu($event, index)"
-              draggable="true"
-              @dragstart.stop="startDrag($event, undefined)"
-              @dragend.stop="stopLayerDrag"
-              @drop.stop="dropElement($event, index)"
-            >
-              <div class="layer-item-content">
-                <span class="layer-item-icon">
-                  <template v-if="element.type === 'text'">
-                    <span class="text-icon">T</span>
-                  </template>
-                  <template v-else>
-                    <span class="image-icon">
-                      <img
-                        :src="element.content"
-                        class="thumbnail"
-                        alt="thumbnail"
-                      />
-                    </span>
-                  </template>
-                </span>
-                <span class="layer-item-text">
-                  {{
-                    element.type === 'text'
-                      ? element.content || t('editor.textPlaceholder')
-                      : t('editor.image') + ' ' + getImageNumber(index)
-                  }}
-                </span>
-              </div>
-              <span class="layer-item-visibility" @click="toggleVisibility(index, $event)">
-                <svg
-                  v-if="element.isVisible !== false"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-                <svg
-                  v-else
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
-                  ></path>
-                  <line x1="1" y1="1" x2="23" y2="23"></line>
-                </svg>
-              </span>
-            </li>
-          </ul>
-        </div>
-      </div>
+      <LayersPanel
+        :elements="elements"
+        :selected-index="selectedIndex"
+        :is-expanded="isLayersExpanded"
+        @toggle="toggleLayers"
+        @select="selectElement"
+        @context-menu="showContextMenu"
+        @toggle-visibility="toggleVisibility"
+        @layer-drag-end="stopLayerDrag"
+        @layer-drop="handleLayerDrop"
+      />
 
       <div class="accordion-item">
         <div class="accordion-header" @click="toggleEditAssist">
@@ -200,26 +126,12 @@
         </div>
       </div>
 
-      <div class="tools-panel">
-        <div class="tools-container">
-          <div class="tools-group">
-            <button @click="handleImageUpload">{{ t('app.upload') }}</button>
-            <button @click="addText">{{ t('app.addText') }}</button>
-            <button class="clear-btn" @click="showConfirmDialog = true">{{ t('app.clear') }}</button>
-            <input
-              type="file"
-              ref="fileInput"
-              @change="onFileSelected"
-              accept="image/*"
-              style="display: none"
-              multiple
-            />
-          </div>
-          <div class="tools-group">
-            <button @click="exportImage">{{ t('app.download') }}</button>
-          </div>
-        </div>
-      </div>
+      <ToolsPanel
+        @add-text="addText"
+        @show-clear-confirm="showConfirmDialog = true"
+        @export="exportImage"
+        @file-selected="handleFileSelected"
+      />
 
       <div class="control-panel" v-if="selectedElement">
         <div class="panel-header">
@@ -231,172 +143,25 @@
           </button>
         </div>
         <div class="panel-content">
-          <template v-if="selectedElement.type === 'text'">
-            <div class="control-item">
-              <label>{{ t('editor.fontSize') }}</label>
-              <input
-                type="range"
-                :value="parseInt(selectedElement.style.fontSize || '24')"
-                min="12"
-                max="72"
-                @input="updateTextSize($event)"
-              />
-              <span class="size-value">{{ selectedElement.style.fontSize }}</span>
-            </div>
-            <div class="control-item">
-              <label>{{ t('editor.fontColor') }}</label>
-              <ColorPicker v-model="selectedElement.style.color" />
-            </div>
-            <div class="control-item">
-              <label>{{ t('editor.backgroundColor') }}</label>
-              <ColorPicker v-model="selectedElement.style.backgroundColor" />
-            </div>
-            <div class="control-item">
-              <label>{{ t('editor.padding') }}</label>
-              <input
-                type="range"
-                :value="parseInt(selectedElement.style.padding || '5')"
-                min="0"
-                max="50"
-                @input="updatePadding($event)"
-              />
-              <span class="size-value">{{ selectedElement.style.padding || '5px' }}</span>
-            </div>
-            <div class="control-item">
-              <label>{{ t('editor.borderStyle') }}</label>
-              <select
-                @change="updateBorderStyle($event)"
-                :value="selectedElement.style.borderStyle || 'none'"
-                class="border-style-select"
-              >
-                <option value="none">{{ t('editor.borderStyles.none') }}</option>
-                <option value="chat-bubble-green">
-                  {{ t('editor.borderStyles.chatBubbleGreen') }}
-                </option>
-                <option value="chat-bubble-blue">
-                  {{ t('editor.borderStyles.chatBubbleBlue') }}
-                </option>
-                <option value="chat-bubble-gray">
-                  {{ t('editor.borderStyles.chatBubbleGray') }}
-                </option>
-                <option value="chat-bubble-green-right">
-                  {{ t('editor.borderStyles.chatBubbleGreenRight') }}
-                </option>
-                <option value="chat-bubble-blue-right">
-                  {{ t('editor.borderStyles.chatBubbleBlueRight') }}
-                </option>
-                <option value="chat-bubble-gray-right">
-                  {{ t('editor.borderStyles.chatBubbleGrayRight') }}
-                </option>
-                <option value="chat-bubble-outline">
-                  {{ t('editor.borderStyles.chatBubbleOutline') }}
-                </option>
-                <option value="chat-bubble-outline-right">
-                  {{ t('editor.borderStyles.chatBubbleOutlineRight') }}
-                </option>
-                <option value="rounded">{{ t('editor.borderStyles.rounded') }}</option>
-                <option value="square">{{ t('editor.borderStyles.square') }}</option>
-                <option value="shadow">{{ t('editor.borderStyles.shadow') }}</option>
-              </select>
-            </div>
-            <div class="control-item">
-              <label>{{ t('editor.rotation') }}</label>
-              <input
-                type="range"
-                :value="parseInt(selectedElement.style.rotate || '0')"
-                min="0"
-                max="360"
-                @input="updateRotation($event)"
-              />
-              <span class="size-value">{{ selectedElement.style.rotate || '0' }}°</span>
-            </div>
-            <div class="control-item">
-              <label>{{ t('editor.opacity') }}</label>
-              <input
-                type="range"
-                :value="Math.round(parseFloat(selectedElement.style.opacity || '1') * 100)"
-                min="0"
-                max="100"
-                @input="updateOpacity($event)"
-              />
-              <span class="size-value">{{ Math.round(parseFloat(selectedElement.style.opacity || '1') * 100) }}%</span>
-            </div>
-          </template>
-          <template v-else>
-            <div class="control-item">
-              <label>{{ t('editor.size') }}</label>
-              <input
-                type="range"
-                :value="parseInt(selectedElement.style.width || '200')"
-                min="20"
-                max="800"
-                @input="updateImageSize($event)"
-              />
-              <span class="size-value">{{ selectedElement.style.width }}</span>
-            </div>
-            <div class="control-item">
-              <label>{{ t('editor.rotation') }}</label>
-              <input
-                type="range"
-                :value="parseInt(selectedElement.style.rotate || '0')"
-                min="0"
-                max="360"
-                @input="updateRotation($event)"
-              />
-              <span class="size-value">{{ selectedElement.style.rotate || '0' }}°</span>
-            </div>
-            <div class="control-item">
-              <label>{{ t('editor.opacity') }}</label>
-              <input
-                type="range"
-                :value="Math.round(parseFloat(selectedElement.style.opacity || '1') * 100)"
-                min="0"
-                max="100"
-                @input="updateOpacity($event)"
-              />
-              <span class="size-value">{{ Math.round(parseFloat(selectedElement.style.opacity || '1') * 100) }}%</span>
-            </div>
-          </template>
+          <TextSettings
+            v-if="selectedElement.type === 'text'"
+            :element="selectedElement"
+            @update="handleStyleUpdate"
+          />
+          <ImageSettings
+            v-else
+            :element="selectedElement"
+            @update="handleStyleUpdate"
+          />
         </div>
       </div>
 
       <!-- 添加右键菜单 -->
-      <div
-        v-if="contextMenuVisible"
-        class="context-menu"
-        :style="{
-          left: contextMenuPosition.x + 'px',
-          top: contextMenuPosition.y + 'px',
-        }"
-        @click.stop
-      >
-        <div class="context-menu-item" @click="moveToTop">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 4l-8 8h6v8h4v-8h6l-8-8z"/>
-          </svg>
-          {{ t('app.moveToTop') }}
-        </div>
-        <div class="context-menu-item" @click="duplicateElement">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-          </svg>
-          {{ t('app.duplicate') }}
-        </div>
-        <div class="context-menu-item" @click="moveToBottom">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 20l-8-8h6V4h4v8h6l-8 8z"/>
-          </svg>
-          {{ t('app.moveToBottom') }}
-        </div>
-        <div class="context-menu-item" @click="moveToCenter">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M12 3v3m0 12v3m-9-9h3m12 0h3"/>
-          </svg>
-          {{ t('app.moveToCenter') }}
-        </div>
-      </div>
+      <ContextMenu
+        v-model:visible="contextMenuVisible"
+        :position="contextMenuPosition"
+        @action="handleContextMenuAction"
+      />
     </div>
   </div>
 
@@ -430,6 +195,11 @@ import ConfirmDialog from './ConfirmDialog.vue'
 import ColorPicker from './ColorPicker.vue'
 import { useKeyboardStore } from '../stores/keyboardStore'
 import { useDragStore } from '../stores/dragStore'
+import ContextMenu from './emoji-maker/ContextMenu.vue'
+import ToolsPanel from './emoji-maker/ToolsPanel.vue'
+import LayersPanel from './emoji-maker/LayersPanel.vue'
+import TextSettings from './emoji-maker/TextSettings.vue'
+import ImageSettings from './emoji-maker/ImageSettings.vue'
 
 const { t } = useLanguageStore()
 const assistStore = useAssistStore()
@@ -438,7 +208,6 @@ const keyboardStore = useKeyboardStore()
 const dragStore = useDragStore()
 const { draggedElement, isDragging, isDraggingOver, isInternalDrag } = storeToRefs(dragStore)
 
-// 添加颜色常量
 const ELEMENT_COLORS = [
   '#00FF00', // 鲜绿色
   '#0000FF', // 纯蓝色
@@ -452,7 +221,6 @@ const ELEMENT_COLORS = [
   '#4169E1', // 皇家蓝
 ]
 
-const fileInput = ref<HTMLInputElement | null>(null)
 const canvasContainer = ref<HTMLDivElement | null>(null)
 const elements = ref<Element[]>([])
 const selectedIndex = ref<number | null>(null)
@@ -490,45 +258,38 @@ const restoreData = () => {
   elements.value = persistStore.loadElements()
 }
 
-const handleImageUpload = () => {
-  fileInput.value?.click()
-}
-
-const onFileSelected = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  if (input.files && input.files.length > 0) {
-    Array.from(input.files).forEach((file) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          const newId =
-            elements.value.length > 0 ? Math.max(...elements.value.map((el) => el.id)) + 1 : 0
-          const containerWidth = canvasContainer.value?.offsetWidth || 400
-          const containerHeight = canvasContainer.value?.offsetHeight || 400
-          const element: Element = {
-            type: 'image',
-            content: e.target.result as string,
-            id: newId,
-            style: {
-              left: '50%',
-              top: '50%',
-              position: 'absolute',
-              transform: 'translate(-50%, -50%)',
-              width: '200px',
-              height: 'auto',
-              rotate: '0deg',
-            },
-            initialCenter: {
-              x: Math.round(containerWidth / 2),
-              y: Math.round(containerHeight / 2),
-            },
-          }
-          elements.value.push(element)
+const handleFileSelected = (files: FileList) => {
+  Array.from(files).forEach((file) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        const newId =
+          elements.value.length > 0 ? Math.max(...elements.value.map((el) => el.id)) + 1 : 0
+        const containerWidth = canvasContainer.value?.offsetWidth || 400
+        const containerHeight = canvasContainer.value?.offsetHeight || 400
+        const element: Element = {
+          type: 'image',
+          content: e.target.result as string,
+          id: newId,
+          style: {
+            left: '50%',
+            top: '50%',
+            position: 'absolute',
+            transform: 'translate(-50%, -50%)',
+            width: '200px',
+            height: 'auto',
+            rotate: '0deg',
+          },
+          initialCenter: {
+            x: Math.round(containerWidth / 2),
+            y: Math.round(containerHeight / 2),
+          },
         }
+        elements.value.push(element)
       }
-      reader.readAsDataURL(file)
-    })
-  }
+    }
+    reader.readAsDataURL(file)
+  })
 }
 
 const addElementToCanvas = (element: Partial<Element>) => {
@@ -989,43 +750,21 @@ const stopLayerDrag = (event: DragEvent) => {
   dragStore.stopLayerDrag(event)
 }
 
-const dropElement = (event: DragEvent, index: number) => {
-  event.preventDefault()
-  event.stopPropagation()
+const handleLayerDrop = (draggedIndex: number, targetIndex: number) => {
+  const elementToMove = elements.value[draggedIndex]
   
-  // 如果不是从图层列表拖拽的，直接返回
-  const target = event.target as HTMLElement
-  if (!target.closest('.layer-list')) {
-    return
-  }
-
-  const data = event.dataTransfer?.getData('text')
-  if (data) {
-    try {
-      const draggedData = JSON.parse(data)
-      // 只处理内部图层排序的拖拽
-      if (draggedData.isInternal && draggedData.isLayerSort) {
-        const draggedIndex = draggedData.index
-        const elementToMove = elements.value[draggedIndex]
-
-        // 移除原位置的元素
-        elements.value.splice(draggedIndex, 1)
-        // 插入到新位置
-        elements.value.splice(index, 0, elementToMove)
-
-        // 重新分配所有元素的 id
-        elements.value.forEach((element, idx) => {
-          element.id = idx
-        })
-
-        selectedIndex.value = index
-        persistStore.addHistory(elements.value)
-      }
-    } catch (e) {
-      console.error('Invalid drag data')
-    }
-  }
-  isInternalDrag.value = false
+  // 移除原位置的元素
+  elements.value.splice(draggedIndex, 1)
+  // 插入到新位置
+  elements.value.splice(targetIndex, 0, elementToMove)
+  
+  // 重新分配所有元素的 id
+  elements.value.forEach((element, idx) => {
+    element.id = idx
+  })
+  
+  selectedIndex.value = targetIndex
+  persistStore.addHistory(elements.value)
 }
 
 const toggleVisibility = (index: number, event: Event) => {
@@ -1123,15 +862,6 @@ const duplicateElement = () => {
   selectedIndex.value = contextMenuIndex.value + 1
   hideContextMenu()
 }
-
-const getImageNumber = (index: number): string => {
-  // 只计算图片类型的元素
-  const imageElements = elements.value.filter(el => el.type === 'image');
-  // 获取当前元素之前的所有图片元素
-  const previousImages = elements.value.slice(0, index).filter(el => el.type === 'image');
-  // 当前是第几个图片 + 1（因为要从1开始）
-  return `#${previousImages.length + 1}`;
-};
 
 // 计算元素的边界框
 const getElementBounds = (element: Element, index: number): DOMRect | null => {
@@ -1288,6 +1018,31 @@ const handleDragEnter = (event: DragEvent) => {
 
 const handleDragLeave = (event: DragEvent) => {
   dragStore.handleDragLeave(event, canvasContainer)
+}
+
+const handleContextMenuAction = (action: string) => {
+  if (contextMenuIndex.value === null) return
+
+  switch (action) {
+    case 'moveToTop':
+      moveToTop()
+      break
+    case 'moveToBottom':
+      moveToBottom()
+      break
+    case 'moveToCenter':
+      moveToCenter()
+      break
+    case 'duplicate':
+      duplicateElement()
+      break
+  }
+}
+
+const handleStyleUpdate = (property: string, value: string) => {
+  if (selectedElement.value) {
+    (selectedElement.value.style as any)[property] = value
+  }
 }
 </script>
 

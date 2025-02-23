@@ -1,0 +1,127 @@
+/* 导入变量和动画 */
+@import './variables.css';
+@import './animations.css';
+
+/* 通用容器样式 */
+.panel-container {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-base);
+  background-color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+/* 通用头部样式 */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  color: var(--text-color);
+}
+
+/* 通用内容区域样式 */
+.panel-content {
+  padding: var(--spacing-md);
+}
+
+/* 通用按钮样式 */
+.btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  background-color: white;
+  color: var(--text-color);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn:hover {
+  background-color: var(--hover-color);
+  border-color: var(--primary-color);
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover-color);
+}
+
+/* 通用输入框样式 */
+.input {
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-base);
+  transition: border-color var(--transition-fast);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* 通用滚动条样式 */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--secondary-color);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* 通用图标样式 */
+.icon {
+  width: var(--font-size-lg);
+  height: var(--font-size-lg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 通用过渡效果 */
+.transition-all {
+  transition: all var(--transition-fast);
+}
+
+/* 通用间距类 */
+.gap-xs { gap: var(--spacing-xs); }
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+
+/* 通用布局类 */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+
+/* 通用状态类 */
+.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.error {
+  color: var(--error-color);
+  border-color: var(--error-color);
+} 
