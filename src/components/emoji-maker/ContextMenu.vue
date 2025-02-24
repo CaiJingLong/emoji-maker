@@ -57,7 +57,7 @@ interface Emits {
   (e: 'update:visible', visible: boolean): void
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const handleAction = (action: string) => {
@@ -98,4 +98,4 @@ const handleAction = (action: string) => {
   height: 16px;
   margin-right: 8px;
 }
-</style> 
+</style>

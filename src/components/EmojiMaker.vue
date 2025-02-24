@@ -192,7 +192,6 @@ import { useAssistStore } from '../stores/assistStore'
 import { usePersistStore, type Element } from '../stores/persistStore'
 import ExportDialog from './ExportDialog.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
-import ColorPicker from './ColorPicker.vue'
 import { useKeyboardStore } from '../stores/keyboardStore'
 import { useDragStore } from '../stores/dragStore'
 import ContextMenu from './emoji-maker/ContextMenu.vue'
@@ -206,7 +205,7 @@ const assistStore = useAssistStore()
 const persistStore = usePersistStore()
 const keyboardStore = useKeyboardStore()
 const dragStore = useDragStore()
-const { draggedElement, isDragging, isDraggingOver, isInternalDrag } = storeToRefs(dragStore)
+const { draggedElement, isDragging, isDraggingOver } = storeToRefs(dragStore)
 
 const ELEMENT_COLORS = [
   '#00FF00', // 鲜绿色
@@ -543,7 +542,7 @@ const handleKeyDown = async (event: KeyboardEvent) => {
     selectedIndex: selectedIndex.value,
     addElementToCanvas
   })
-  
+
   if (result?.type === 'history') {
     elements.value = result.elements
   }
@@ -752,17 +751,17 @@ const stopLayerDrag = (event: DragEvent) => {
 
 const handleLayerDrop = (draggedIndex: number, targetIndex: number) => {
   const elementToMove = elements.value[draggedIndex]
-  
+
   // 移除原位置的元素
   elements.value.splice(draggedIndex, 1)
   // 插入到新位置
   elements.value.splice(targetIndex, 0, elementToMove)
-  
+
   // 重新分配所有元素的 id
   elements.value.forEach((element, idx) => {
     element.id = idx
   })
-  
+
   selectedIndex.value = targetIndex
   persistStore.addHistory(elements.value)
 }
@@ -838,25 +837,25 @@ const loadElements = () => {
 const duplicateElement = () => {
   if (contextMenuIndex.value === null) return
   const originalElement = elements.value[contextMenuIndex.value]
-  
+
   // 深拷贝原始元素
   const newElement = JSON.parse(JSON.stringify(originalElement))
-  
+
   // 生成新的ID
   newElement.id = Math.max(...elements.value.map(el => el.id)) + 1
-  
+
   // 计算新位置（相对偏移20px）
   const currentLeft = parseInt(newElement.style.left) || 0
   const currentTop = parseInt(newElement.style.top) || 0
   newElement.style.left = `${currentLeft + 20}px`
   newElement.style.top = `${currentTop + 20}px`
-  
+
   // 如果有初始中心点，也要相应调整
   if (newElement.initialCenter) {
     newElement.initialCenter.x += 20
     newElement.initialCenter.y += 20
   }
-  
+
   // 添加到元素列表中
   elements.value.splice(contextMenuIndex.value + 1, 0, newElement)
   selectedIndex.value = contextMenuIndex.value + 1
@@ -1044,6 +1043,19 @@ const handleStyleUpdate = (property: string, value: string) => {
     (selectedElement.value.style as any)[property] = value
   }
 }
+
+defineExpose({
+  updateTextSize,
+  updateImageSize,
+  updateRotation,
+  updateTextColor,
+  updateBackgroundColor,
+  updatePadding,
+  updateBorderStyle,
+  updateOpacity,
+  addElement,
+  loadElements
+})
 </script>
 
 <style scoped>

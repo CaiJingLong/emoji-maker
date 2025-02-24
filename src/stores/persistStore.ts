@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 // 存储键名常量
 const STORAGE_KEYS = {
@@ -220,4 +220,4 @@ export const usePersistStore = defineStore('persist', () => {
     loadLanguage,
     saveLanguage,
   }
-}) 
+})

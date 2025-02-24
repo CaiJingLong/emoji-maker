@@ -13,11 +13,11 @@
     </div>
     <div class="control-item">
       <label>{{ t('editor.fontColor') }}</label>
-      <ColorPicker v-model="element.style.color" />
+      <ColorPicker :value="element.style.color" @update:modelValue="(value) => emit('update', 'color', value)" />
     </div>
     <div class="control-item">
       <label>{{ t('editor.backgroundColor') }}</label>
-      <ColorPicker v-model="element.style.backgroundColor" />
+      <ColorPicker :value="element.style.backgroundColor" @update:modelValue="(value) => emit('update', 'backgroundColor', value)" />
     </div>
     <div class="control-item">
       <label>{{ t('editor.padding') }}</label>
@@ -41,11 +41,21 @@
         <option value="chat-bubble-green">{{ t('editor.borderStyles.chatBubbleGreen') }}</option>
         <option value="chat-bubble-blue">{{ t('editor.borderStyles.chatBubbleBlue') }}</option>
         <option value="chat-bubble-gray">{{ t('editor.borderStyles.chatBubbleGray') }}</option>
-        <option value="chat-bubble-green-right">{{ t('editor.borderStyles.chatBubbleGreenRight') }}</option>
-        <option value="chat-bubble-blue-right">{{ t('editor.borderStyles.chatBubbleBlueRight') }}</option>
-        <option value="chat-bubble-gray-right">{{ t('editor.borderStyles.chatBubbleGrayRight') }}</option>
-        <option value="chat-bubble-outline">{{ t('editor.borderStyles.chatBubbleOutline') }}</option>
-        <option value="chat-bubble-outline-right">{{ t('editor.borderStyles.chatBubbleOutlineRight') }}</option>
+        <option value="chat-bubble-green-right">
+          {{ t('editor.borderStyles.chatBubbleGreenRight') }}
+        </option>
+        <option value="chat-bubble-blue-right">
+          {{ t('editor.borderStyles.chatBubbleBlueRight') }}
+        </option>
+        <option value="chat-bubble-gray-right">
+          {{ t('editor.borderStyles.chatBubbleGrayRight') }}
+        </option>
+        <option value="chat-bubble-outline">
+          {{ t('editor.borderStyles.chatBubbleOutline') }}
+        </option>
+        <option value="chat-bubble-outline-right">
+          {{ t('editor.borderStyles.chatBubbleOutlineRight') }}
+        </option>
         <option value="rounded">{{ t('editor.borderStyles.rounded') }}</option>
         <option value="square">{{ t('editor.borderStyles.square') }}</option>
         <option value="shadow">{{ t('editor.borderStyles.shadow') }}</option>
@@ -71,7 +81,9 @@
         max="100"
         @input="handleOpacityChange"
       />
-      <span class="size-value">{{ Math.round(parseFloat(element.style.opacity || '1') * 100) }}%</span>
+      <span class="size-value"
+        >{{ Math.round(parseFloat(element.style.opacity || '1') * 100) }}%</span
+      >
     </div>
   </div>
 </template>
@@ -91,7 +103,7 @@ interface Emits {
   (e: 'update', property: string, value: string): void
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const handleFontSizeChange = (event: Event) => {
@@ -123,4 +135,4 @@ const handleOpacityChange = (event: Event) => {
 
 <style scoped>
 @import '@/styles/commonSettings.css';
-</style> 
+</style>

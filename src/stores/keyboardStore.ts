@@ -11,13 +11,13 @@ export const useKeyboardStore = defineStore('keyboard', () => {
       selectedElement,
       deleteElement,
       selectedIndex,
-      addElementToCanvas
+      addElementToCanvas,
     }: {
       selectedElement: Element | null
       deleteElement: (index: number) => void
       selectedIndex: number | null
       addElementToCanvas: (element: Partial<Element>) => void
-    }
+    },
   ) => {
     // 如果正在编辑文本，不处理快捷键
     if (selectedElement?.isEditing) return
@@ -59,8 +59,8 @@ export const useKeyboardStore = defineStore('keyboard', () => {
                           top: '50%',
                           position: 'absolute',
                           width: '200px',
-                          height: 'auto'
-                        }
+                          height: 'auto',
+                        },
                       })
                     }
                   }
@@ -81,13 +81,13 @@ export const useKeyboardStore = defineStore('keyboard', () => {
                       top: '50%',
                       position: 'absolute',
                       fontSize: '24px',
-                      color: '#000000'
-                    }
+                      color: '#000000',
+                    },
                   })
                 }
               }
             }
-          } catch (error) {
+          } catch {
             console.debug('剪贴板访问被拒绝或不可用')
           }
           break
@@ -99,6 +99,6 @@ export const useKeyboardStore = defineStore('keyboard', () => {
   }
 
   return {
-    handleKeyDown
+    handleKeyDown,
   }
-}) 
+})

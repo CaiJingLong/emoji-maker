@@ -129,14 +129,12 @@ const handleDrop = (event: DragEvent, targetIndex: number) => {
     if (draggedData.isInternal && draggedData.isLayerSort) {
       emit('layer-drop', draggedData.index, targetIndex)
     }
-  } catch (e) {
+  } catch {
     console.error('Invalid drag data')
   }
 }
 
 const getImageNumber = (index: number): string => {
-  // 只计算图片类型的元素
-  const imageElements = props.elements.filter(el => el.type === 'image')
   // 获取当前元素之前的所有图片元素
   const previousImages = props.elements.slice(0, index).filter(el => el.type === 'image')
   // 当前是第几个图片 + 1（因为要从1开始）
@@ -269,4 +267,4 @@ const getImageNumber = (index: number): string => {
 .layer-item-visibility:hover {
   background-color: #eee;
 }
-</style> 
+</style>

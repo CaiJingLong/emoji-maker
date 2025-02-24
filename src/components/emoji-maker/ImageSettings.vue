@@ -50,7 +50,7 @@ interface Emits {
   (e: 'update', property: string, value: string): void
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const handleSizeChange = (event: Event) => {
@@ -73,4 +73,4 @@ const handleOpacityChange = (event: Event) => {
 
 <style scoped>
 @import '@/styles/commonSettings.css';
-</style> 
+</style>

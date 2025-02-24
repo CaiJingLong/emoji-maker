@@ -3,9 +3,6 @@ import { ref, watch } from 'vue'
 import { usePersistStore } from './persistStore'
 
 // 常量定义
-const GUIDELINES_STORAGE_KEY = 'emoji-maker-guidelines'
-const SNAPPING_STORAGE_KEY = 'emoji-maker-snapping'
-const BOUNDARIES_STORAGE_KEY = 'emoji-maker-show-boundaries'
 const SNAP_THRESHOLD = 10 // 吸附阈值（像素）
 const CONTAINER_GUIDELINE_COLOR = '#FF0000' // 容器辅助线颜色
 
@@ -25,7 +22,7 @@ export interface SnapInfo {
 
 export const useAssistStore = defineStore('assist', () => {
   const persistStore = usePersistStore()
-  
+
   // 状态
   const showGuidelines = ref(persistStore.loadGuidelinesState())
   const enableSnapping = ref(persistStore.loadSnappingState())
@@ -88,4 +85,4 @@ export const useAssistStore = defineStore('assist', () => {
     toggleOtherBoundaries,
     clearGuidelines,
   }
-}) 
+})
