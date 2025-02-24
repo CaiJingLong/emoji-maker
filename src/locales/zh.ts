@@ -31,6 +31,8 @@ const zh = {
     fontColor: '颜色',
     backgroundColor: '背景颜色',
     padding: '内边距',
+    paddingHorizontal: '横向内边距',
+    paddingVertical: '纵向内边距',
     borderStyle: '边框样式',
     rotation: '旋转',
     size: '大小',

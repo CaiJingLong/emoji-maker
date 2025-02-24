@@ -20,15 +20,26 @@
       <ColorPicker :value="element.style.backgroundColor" @update:modelValue="(value) => emit('update', 'backgroundColor', value)" />
     </div>
     <div class="control-item">
-      <label>{{ t('editor.padding') }}</label>
+      <label>{{ t('editor.paddingHorizontal') }}</label>
       <input
         type="range"
-        :value="parseInt(element.style.padding || '5')"
+        :value="parseInt(element.style.paddingLeft || '5')"
         min="0"
         max="50"
-        @input="handlePaddingChange"
+        @input="handlePaddingHorizontalChange"
       />
-      <span class="size-value">{{ element.style.padding || '5px' }}</span>
+      <span class="size-value">{{ element.style.paddingLeft || '5px' }}</span>
+    </div>
+    <div class="control-item">
+      <label>{{ t('editor.paddingVertical') }}</label>
+      <input
+        type="range"
+        :value="parseInt(element.style.paddingTop || '5')"
+        min="0"
+        max="50"
+        @input="handlePaddingVerticalChange"
+      />
+      <span class="size-value">{{ element.style.paddingTop || '5px' }}</span>
     </div>
     <div class="control-item">
       <label>{{ t('editor.borderStyle') }}</label>
@@ -111,9 +122,18 @@ const handleFontSizeChange = (event: Event) => {
   emit('update', 'fontSize', `${input.value}px`)
 }
 
-const handlePaddingChange = (event: Event) => {
+const handlePaddingHorizontalChange = (event: Event) => {
   const input = event.target as HTMLInputElement
-  emit('update', 'padding', `${input.value}px`)
+  const value = `${input.value}px`
+  emit('update', 'paddingLeft', value)
+  emit('update', 'paddingRight', value)
+}
+
+const handlePaddingVerticalChange = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const value = `${input.value}px`
+  emit('update', 'paddingTop', value)
+  emit('update', 'paddingBottom', value)
 }
 
 const handleBorderStyleChange = (event: Event) => {

@@ -115,7 +115,10 @@
                   fontSize: element.style.fontSize,
                   color: element.style.color,
                   backgroundColor: element.style.backgroundColor,
-                  padding: element.style.padding,
+                  paddingLeft: element.style.paddingLeft,
+                  paddingRight: element.style.paddingRight,
+                  paddingTop: element.style.paddingTop,
+                  paddingBottom: element.style.paddingBottom,
                 }"
               ></div>
             </template>
@@ -795,7 +798,11 @@ const initializeElementStyle = (element: any) => {
     opacity: '1',
     borderStyle: 'none',
     backgroundColor: 'transparent',
-    padding: '0px'
+    padding: '0px',
+    paddingLeft: '5px',
+    paddingRight: '5px',
+    paddingTop: '5px',
+    paddingBottom: '5px'
   }
 
   // 合并默认样式和现有样式

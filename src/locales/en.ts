@@ -31,6 +31,8 @@ const en = {
     fontColor: 'Color',
     backgroundColor: 'Background Color',
     padding: 'Padding',
+    paddingHorizontal: 'Horizontal Padding',
+    paddingVertical: 'Vertical Padding',
     borderStyle: 'Border Style',
     rotation: 'Rotation',
     size: 'Size',

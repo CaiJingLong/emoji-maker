@@ -25,6 +25,10 @@ export interface ElementStyle {
   opacity?: string
   backgroundColor?: string
   padding?: string
+  paddingLeft?: string
+  paddingRight?: string
+  paddingTop?: string
+  paddingBottom?: string
 }
 
 export interface Element {
